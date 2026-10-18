@@ -203,6 +203,10 @@ if(THREE.ColorManagement){
 }
 
 const FALLBACK_URL = location.protocol === 'file:' ? '../小棠的梳妆台.html' : '../';
+if(new URLSearchParams(location.search).has('no3d')){
+  location.replace(FALLBACK_URL);
+  return;
+}
 function hasWebGL(){
   try {
     const c = document.createElement('canvas');
