@@ -692,26 +692,13 @@
     // 脸
     ctx.fillStyle = rg(ctx, 320, 212, 18, 158, [[0, '#fff1e6'], [0.5, SKIN.light], [0.85, SKIN.mid], [1, SKIN.dark]]);
     facePath(ctx); ctx.fill();
-    // 面部立体感（侧影 / 高光 / 卧蚕光）
+    // 面部立体感：只保留很淡的额头/下巴柔光，避免生硬的侧影竖条
     ctx.save();
     facePath(ctx); ctx.clip();
-    // 两侧柔和侧影（渐变过渡，避免生硬竖条）
-    const shadeL = ctx.createLinearGradient(228, 0, 300, 0);
-    shadeL.addColorStop(0, 'rgba(205,130,110,.20)');
-    shadeL.addColorStop(0.55, 'rgba(205,130,110,.06)');
-    shadeL.addColorStop(1, 'rgba(205,130,110,0)');
-    ctx.fillStyle = shadeL; ctx.fillRect(228, 200, 76, 175);
-    const shadeR = ctx.createLinearGradient(412, 0, 340, 0);
-    shadeR.addColorStop(0, 'rgba(205,130,110,.20)');
-    shadeR.addColorStop(0.55, 'rgba(205,130,110,.06)');
-    shadeR.addColorStop(1, 'rgba(205,130,110,0)');
-    ctx.fillStyle = shadeR; ctx.fillRect(336, 200, 76, 175);
-    ctx.fillStyle = 'rgba(255,255,255,.22)';
-    ctx.beginPath(); ctx.ellipse(320, 182, 44, 24, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(320, 350, 22, 10, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.14)';
-    ctx.beginPath(); ctx.ellipse(317, 274, 8, 32, 0.04, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.12)';
+    ctx.fillStyle = 'rgba(255,255,255,.10)';
+    ctx.beginPath(); ctx.ellipse(320, 182, 38, 20, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(320, 350, 20, 9, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.08)';
     ctx.beginPath(); ctx.ellipse(280, 272, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(360, 272, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
