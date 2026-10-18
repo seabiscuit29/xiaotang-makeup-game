@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>小棠的梳妆台 · 3D 试玩版</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0b1020;touch-action:none;overscroll-behavior:none;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;color:#3a2320;-webkit-user-select:none;user-select:none;}
+  #stage{position:fixed;inset:0;z-index:1;}
+  #stage canvas{display:block;width:100%;height:100%;touch-action:none;}
+  #hud{position:fixed;left:14px;right:14px;top:10px;display:flex;align-items:center;justify-content:space-between;z-index:20;pointer-events:none;}
+  #brand{font-family:"STKaiti","KaiTi","Kaiti SC",serif;font-size:24px;font-weight:700;color:#7c1f2d;
+    background:linear-gradient(180deg,rgba(255,248,235,.96),rgba(255,240,220,.9));border:2px solid rgba(198,150,76,.65);
+    border-radius:16px;padding:7px 16px;box-shadow:0 4px 16px rgba(0,0,0,.3);pointer-events:auto;white-space:nowrap;}
+  #brand span{font-size:14px;color:#9c6a3e;font-family:"PingFang SC",sans-serif;}
+  #hudRight{display:flex;gap:8px;pointer-events:auto;}
+  .hudbtn{border:2px solid rgba(198,150,76,.65);background:rgba(255,248,235,.94);color:#7c1f2d;border-radius:14px;
+    min-width:58px;height:44px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .hudbtn:active{transform:scale(.95);}
+  #panel{position:fixed;z-index:30;background:linear-gradient(180deg,rgba(255,250,242,.97),rgba(253,240,222,.97));
+    border:2px solid rgba(198,150,76,.6);border-radius:22px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:12px;
+    display:flex;flex-direction:column;gap:9px;overflow:hidden;}
+  body:not(.portrait) #panel{top:72px;right:12px;bottom:12px;width:344px;}
+  body.portrait #panel{left:8px;right:8px;bottom:8px;height:min(40vh,380px);padding:10px 10px 8px;}
+  #tabs{display:flex;gap:6px;}
+  .tab{flex:1;height:46px;border-radius:14px;border:2px solid rgba(198,150,76,.55);background:#fff8ec;color:#8a5a2b;
+    font-size:18px;font-weight:800;font-family:inherit;cursor:pointer;}
+  .tab.active{background:linear-gradient(180deg,#a92b3c,#7c1622);color:#ffe9c2;border-color:#e6c47a;}
+  .tabpane{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+  .tabpane.hidden{display:none;}
+  #tools{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .tool{height:52px;border-radius:14px;border:2px solid rgba(198,150,76,.45);background:#fffaf0;color:#5c3a22;
+    font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:3px;}
+  .tool.active{background:linear-gradient(180deg,#ffe6b8,#f6cf8d);border-color:#b98a3f;color:#7c1f2d;}
+  .tool:active{transform:scale(.96);}
+  #palette{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+  .sw{height:42px;border-radius:50%;border:3px solid rgba(255,255,255,.85);box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;}
+  .sw.active{outline:4px solid #e0b56a;outline-offset:2px;}
+  .actions{display:flex;gap:8px;margin-top:auto;padding-top:2px;}
+  .actions button{flex:1;height:48px;border-radius:14px;border:2px solid rgba(198,150,76,.55);background:#fff8ec;
+    color:#7c1f2d;font-size:17px;font-weight:800;font-family:inherit;cursor:pointer;}
+  .actions button:active{transform:scale(.96);}
+  .bigbtn{height:54px;border-radius:16px;border:2px solid rgba(198,150,76,.65);background:linear-gradient(180deg,#ffe6b8,#f2c980);
+    color:#7c1f2d;font-size:18px;font-weight:900;font-family:inherit;cursor:pointer;}
+  .bigbtn:active{transform:scale(.97);}
+  .section-title{font-size:14px;color:#9c6a3e;font-weight:700;padding-left:2px;}
+  .optgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+  .opt{border-radius:14px;border:2px solid rgba(198,150,76,.45);background:#fffaf0;padding:7px 6px;display:flex;
+    align-items:center;gap:7px;cursor:pointer;min-height:52px;font-family:inherit;}
+  .opt.active{border-color:#b98a3f;background:#fff0d4;}
+  .opt:active{transform:scale(.97);}
+  .dot{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.8);flex:none;}
+  .opt .lbl{font-size:14px;font-weight:700;color:#5c3a22;line-height:1.15;}
+  #photoBtn{height:60px;border-radius:18px;border:2px solid #e6c47a;background:linear-gradient(180deg,#b03040,#7c1622);
+    color:#ffe9c2;font-size:21px;font-weight:900;font-family:inherit;cursor:pointer;}
+  #photoBtn:active{transform:scale(.97);}
+  .hint{font-size:13px;color:#8a5a2b;line-height:1.5;margin:2px;}
+  #toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%);background:rgba(40,16,20,.92);color:#ffe9c2;
+    font-size:16px;font-weight:700;padding:11px 20px;border-radius:999px;z-index:80;opacity:0;pointer-events:none;
+    transition:opacity .25s,transform .25s;max-width:86vw;text-align:center;}
+  #toast.show{opacity:1;}
+  .overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%,rgba(30,20,40,.5),rgba(5,6,12,.82));backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);padding:16px;}
+  .overlay.hidden{display:none;}
+  .card{background:linear-gradient(180deg,#fffaf0,#f8e8d0);border:3px solid #d9b36a;border-radius:28px;padding:24px 26px;
+    max-width:560px;width:min(92vw,560px);text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+  .card h1{font-family:"STKaiti","KaiTi","Kaiti SC",serif;font-size:40px;margin:0 0 4px;color:#7c1f2d;letter-spacing:2px;}
+  .card h2{font-size:23px;color:#7c1f2d;margin:6px 0;}
+  .sub{margin:0 0 12px;color:#9c6a3e;font-size:17px;}
+  .rule{font-size:17px;color:#5c3a22;margin:8px 0;line-height:1.65;}
+  .rule.small{font-size:15px;color:#a05a33;background:#ffeccf;display:inline-block;padding:6px 14px;border-radius:999px;}
+  .primary{min-width:220px;height:62px;border-radius:20px;border:2px solid #e6c47a;font-size:24px;font-weight:900;
+    background:linear-gradient(180deg,#b03040,#7c1622);color:#ffe9c2;font-family:inherit;cursor:pointer;
+    box-shadow:0 8px 20px rgba(0,0,0,.35);margin-top:12px;letter-spacing:2px;}
+  .primary:active{transform:scale(.97);}
+  .tiny{font-size:13px;color:#a08a74;margin:12px 0 0;line-height:1.5;}
+  .linkbtn{background:none;border:none;color:#9c6a3e;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit;}
+  .moon{font-size:50px;line-height:1;margin-top:2px;}
+  .countdown{font-size:50px;font-weight:900;color:#8f2233;letter-spacing:2px;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace;margin:4px 0;}
+  #photoModal .card{max-width:min(86vw,760px);padding:14px;}
+  #photoImg{max-width:100%;max-height:64vh;border-radius:14px;border:2px solid #d9b36a;display:block;margin:0 auto;}
+  #zenExit{position:fixed;right:16px;top:16px;z-index:40;display:none;}
+  body.zen #hud,body.zen #panel,body.zen #toast{display:none;}
+  body.zen #zenExit{display:block;}
+  #zenExit button{height:48px;padding:0 20px;border-radius:15px;border:2px solid rgba(198,150,76,.7);
+    background:rgba(255,248,235,.95);color:#7c1f2d;font-size:17px;font-weight:800;font-family:inherit;}
+  #parentActions{display:flex;gap:8px;justify-content:center;margin-top:12px;}
+  #parentActions button{height:46px;border-radius:14px;border:2px solid rgba(198,150,76,.55);background:#fff8ec;
+    color:#7c1f2d;font-size:16px;font-weight:800;font-family:inherit;padding:0 14px;cursor:pointer;}
+  noscript{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99;background:#fff8ec;
+    color:#7c1f2d;font-size:22px;padding:24px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="hud">
+  <div id="brand">小棠的梳妆台 <span>· 3D 试玩版</span></div>
+  <div id="hudRight">
+    <button class="hudbtn" id="btnZen">欣赏</button>
+    <button class="hudbtn" id="btnMute">🔊</button>
+  </div>
+</div>
+
+<div id="panel">
+  <div id="tabs">
+    <button class="tab active" data-tab="makeup">化妆</button>
+    <button class="tab" data-tab="dress">衣橱</button>
+    <button class="tab" data-tab="jewelry">首饰</button>
+    <button class="tab" data-tab="photo">拍照</button>
+  </div>
+  <div id="tabMakeup" class="tabpane">
+    <button class="bigbtn" id="btnFace">🔍 放大化妆</button>
+    <div id="tools"></div>
+    <div class="section-title" id="paletteTitle">口红颜色</div>
+    <div id="palette"></div>
+    <div class="actions">
+      <button id="btnUndo">↩ 撤销</button>
+      <button id="btnClear">🧼 卸妆</button>
+    </div>
+  </div>
+  <div id="tabDress" class="tabpane hidden">
+    <div class="section-title">衣服颜色</div>
+    <div class="optgrid" id="outfitList"></div>
+    <div class="section-title" style="margin-top:6px;">头发颜色</div>
+    <div class="optgrid" id="hairList"></div>
+  </div>
+  <div id="tabJewelry" class="tabpane hidden">
+    <div id="jewelryTabs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+    <div class="optgrid" id="jewelryList" style="margin-top:6px;"></div>
+    <p class="hint">首饰会戴在小棠身上；进入「欣赏」模式可以转一圈看看。</p>
+  </div>
+  <div id="tabPhoto" class="tabpane hidden">
+    <button id="photoBtn">📸 拍下我的作品</button>
+    <p class="hint">拍好以后长按图片可以保存到相册。</p>
+  </div>
+</div>
+
+<div id="zenExit"><button id="btnZenExit">继续玩</button></div>
+
+<div id="startOverlay" class="overlay">
+  <div class="card">
+    <h1>小棠的梳妆台</h1>
+    <p class="sub">3D 试玩版 · 月下庭院</p>
+    <div class="rule">拖动旋转 · 双指/滚轮缩放<br>点「放大化妆」可以贴近小棠的脸精细化妆</div>
+    <div class="rule small">每次玩 20 分钟，就要休息 1 小时哦</div>
+    <button class="primary" id="btnStart">进入庭院</button>
+    <p class="tiny">无广告 · 无联网 · 无充值 &nbsp; <button class="linkbtn" id="btnParent">家长</button> &nbsp; <a class="linkbtn" id="fallbackLink" href="../">2D 版</a></p>
+  </div>
+</div>
+
+<div id="lockOverlay" class="overlay hidden">
+  <div class="card">
+    <div class="moon">🌙</div>
+    <h2>时间到啦，眼睛要休息一下</h2>
+    <p class="tiny" style="margin:10px 0 2px;">下次可以玩的时间</p>
+    <div class="countdown" id="lockCountdown">59:59</div>
+    <p class="tiny">休息 1 小时后自动解锁</p>
+    <button class="linkbtn" id="btnParent2">家长入口</button>
+  </div>
+</div>
+
+<div id="parentModal" class="overlay hidden">
+  <div class="card">
+    <h2>家长入口</h2>
+    <p class="tiny" style="font-size:14px;line-height:1.7;color:#5c3a22;">
+      为了防止孩子通过刷新页面绕过限制，游玩时间与休息倒计时会保存在本机。<br>
+      您可以在这里重置计时（重置后需要重新开始 20 分钟）。
+    </p>
+    <div id="parentActions">
+      <button id="btnResetTimer">重置游玩时间</button>
+      <button id="btnParentClose">关闭</button>
+    </div>
+    <p class="tiny">“家长关闭限制”功能将在后续版本提供</p>
+  </div>
+</div>
+
+<div id="photoModal" class="overlay hidden">
+  <div class="card">
+    <img id="photoImg" alt="我的作品">
+    <p class="tiny">长按照片可以保存到相册</p>
+    <button class="primary" id="btnPhotoClose">继续玩</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<noscript>请开启 JavaScript 才能玩哦～</noscript>
+
+<script src="three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+if(THREE.ColorManagement){
+  THREE.ColorManagement.legacyMode = false;
+  THREE.ColorManagement.enabled = true;
+}
+
+const FALLBACK_URL = location.protocol === 'file:' ? '../小棠的梳妆台.html' : '../';
+function hasWebGL(){
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl') || c.getContext('experimental-webgl')));
+  } catch(e){ return false; }
+}
+if(typeof THREE === 'undefined' || !hasWebGL()){
+  // 不支持 3D 的环境：自动回退到 2D 版
+  document.body.innerHTML = '<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#fff8ec;color:#7c1f2d;font:22px sans-serif;padding:24px;text-align:center">当前设备不支持 3D，正在打开 2D 版…</div>';
+  location.replace(FALLBACK_URL);
+  return;
+}
+
+/* ============================================================
+   0. 基础工具 / 状态
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : v; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+};
+const SKIN = { light:'#ffe4d1', mid:'#f4c6ad', dark:'#e0a68c', line:'#c98b78' };
+const HAIRS = [{a:'#2b1b1d', b:'#120b0d'}, {a:'#4b2f26', b:'#2a1814'}, {a:'#633d2b', b:'#38221a'}];
+const OUTFITS = [
+  { name:'红金汉服', main:'#a92333', sub:'#7c1622', trim:'#e0b56a', inner:'#fbeee0' },
+  { name:'月白汉服', main:'#e7eff5', sub:'#b9cdd9', trim:'#6c93a5', inner:'#fdf8ee' },
+  { name:'黛青汉服', main:'#3e6b5f', sub:'#27493f', trim:'#cfa96a', inner:'#eff3e7' },
+  { name:'粉紫仙裙', main:'#e7c3da', sub:'#bd93c7', trim:'#e9cf94', inner:'#fdf4f8' }
+];
+const state = {
+  outfit: 0,
+  hairColor: 0,
+  earrings: 0,
+  hairpin: 0,
+  necklace: 0,
+  tool: 'lipstick',
+  color: '#c62828',
+  actions: []
+};
+window.__state = state;
+
+/* ============================================================
+   1. 脸部纹理绘制（复用 2D 版的小棠面容）
+   ============================================================ */
+const FACE_W = 1024, FACE_H = 1280, FACE_S = 4.8;
+const FACE_TX = 512 - 320 * FACE_S;
+const FACE_TY = 640 - 250 * FACE_S;
+const baseCanvas = document.createElement('canvas'); baseCanvas.width = FACE_W; baseCanvas.height = FACE_H;
+const makeupCanvas = document.createElement('canvas'); makeupCanvas.width = FACE_W; makeupCanvas.height = FACE_H;
+const compositeCanvas = document.createElement('canvas'); compositeCanvas.width = FACE_W; compositeCanvas.height = FACE_H;
+const baseCtx = baseCanvas.getContext('2d');
+const mctx = makeupCanvas.getContext('2d');
+const cctx = compositeCanvas.getContext('2d');
+let faceTexture = null;
+
+function lg(ctx,x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); stops.forEach(s=>g.addColorStop(s[0],s[1])); return g; }
+function rg(ctx,x,y,r0,r1,stops){ const g=ctx.createRadialGradient(x,y,r0,x,y,r1); stops.forEach(s=>g.addColorStop(s[0],s[1])); return g; }
+function facePath(ctx){
+  ctx.beginPath();
+  ctx.moveTo(320,118);
+  ctx.bezierCurveTo(262,118,232,154,228,224);
+  ctx.bezierCurveTo(225,286,246,338,284,360);
+  ctx.bezierCurveTo(303,370,337,370,356,360);
+  ctx.bezierCurveTo(394,338,415,286,412,224);
+  ctx.bezierCurveTo(408,154,378,118,320,118);
+  ctx.closePath();
+}
+function drawBrowBase(ctx,x,y,dir){
+  ctx.save(); ctx.translate(x,y); ctx.scale(dir,1);
+  ctx.strokeStyle='#cba88e'; ctx.lineWidth=4.4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-31,6); ctx.quadraticCurveTo(-4,-7,30,1); ctx.stroke();
+  ctx.strokeStyle='rgba(203,168,142,.65)'; ctx.lineWidth=2.2;
+  ctx.beginPath(); ctx.moveTo(-31,6); ctx.quadraticCurveTo(-25,2,-18,1); ctx.stroke();
+  ctx.restore();
+}
+function drawEye(ctx,cx,cy,side){
+  ctx.save();
+  const ox = cx + side * 23, ix = cx - side * 23;
+  ctx.fillStyle = '#fffdfa';
+  ctx.beginPath();
+  ctx.moveTo(ix, cy + 2);
+  ctx.bezierCurveTo(cx - side*12, cy - 11, cx + side*6, cy - 14, ox, cy - 4);
+  ctx.bezierCurveTo(cx + side*8, cy + 7, cx - side*10, cy + 11, ix, cy + 2);
+  ctx.closePath(); ctx.fill();
+  const ex = cx + side * 1.2;
+  ctx.fillStyle = rg(ctx, ex-2, cy-4, 1, 9, [[0,'#b07f4c'],[.55,'#7a4a28'],[1,'#46260f']]);
+  ctx.beginPath(); ctx.arc(ex, cy-1, 8.4, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#24140d'; ctx.beginPath(); ctx.arc(ex, cy-1, 3.9, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.beginPath(); ctx.arc(ex-2.6, cy-4.2, 2.7, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(ex+2.8, cy+2, 1.4, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#3a2420'; ctx.lineWidth = 2.8; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ix, cy+2); ctx.bezierCurveTo(cx-side*12, cy-11, cx+side*6, cy-14, ox, cy-4); ctx.stroke();
+  ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(ox, cy-4); ctx.quadraticCurveTo(ox+side*6, cy-8, ox+side*9, cy-12); ctx.stroke();
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(ox+side*2, cy-5); ctx.lineTo(ox+side*7, cy-9);
+  ctx.moveTo(ox+side*3, cy-2); ctx.lineTo(ox+side*8, cy-3);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(170,110,95,.32)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(cx-side*10, cy-11); ctx.quadraticCurveTo(cx+side*4, cy-19, ox+side*1, cy-8); ctx.stroke();
+  ctx.strokeStyle = 'rgba(150,95,80,.30)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(cx-side*10, cy+8); ctx.quadraticCurveTo(cx+side*2, cy+11, ox-side*2, cy+4); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.20)'; ctx.beginPath(); ctx.ellipse(cx+side*2, cy+14, 13, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawNose(ctx){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(195,130,110,.38)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(317,270); ctx.quadraticCurveTo(313,284,314,292); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.30)'; ctx.beginPath(); ctx.ellipse(320,294,6,4,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = 'rgba(195,130,110,.26)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(307,299); ctx.quadraticCurveTo(313,303,320,302); ctx.moveTo(333,299); ctx.quadraticCurveTo(327,303,320,302); ctx.stroke();
+  ctx.restore();
+}
+function drawLipsBase(ctx){
+  ctx.save();
+  ctx.fillStyle = lg(ctx,320,324,320,344,[[0,'#eab6ae'],[1,'#d98e88']]);
+  ctx.beginPath();
+  ctx.moveTo(303,330); ctx.quadraticCurveTo(311,323,320,327); ctx.quadraticCurveTo(329,323,337,330);
+  ctx.quadraticCurveTo(330,340,320,342); ctx.quadraticCurveTo(310,340,303,330);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(185,105,100,.45)'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.40)'; ctx.beginPath(); ctx.ellipse(320,333.5,4.5,2,0,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function makeHairFringeTexture(){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0,0,0,256);
+  grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#b9b9b9');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(0,0); g.lineTo(512,0); g.lineTo(512,80);
+  g.bezierCurveTo(440,160,380,130,340,200);
+  g.bezierCurveTo(310,250,280,240,256,150);
+  g.bezierCurveTo(232,240,202,250,172,200);
+  g.bezierCurveTo(132,130,72,160,0,80);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 3;
+  for(let i=0;i<5;i++){
+    g.beginPath();
+    g.moveTo(160+i*36, 10);
+    g.quadraticCurveTo(180+i*34, 70, 200+i*34, 100);
+    g.stroke();
+  }
+  return new THREE.CanvasTexture(c);
+}
+function makeSideLockTexture(){
+  const c = document.createElement('canvas'); c.width = 128; c.height = 512;
+  const g = c.getContext('2d');
+  const grad = g.createLinearGradient(0,0,128,0);
+  grad.addColorStop(0,'#ffffff'); grad.addColorStop(.5,'#e8e8e8'); grad.addColorStop(1,'#a9a9a9');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(28,0); g.lineTo(102,0);
+  g.bezierCurveTo(110,120,96,260,78,380);
+  g.bezierCurveTo(70,450,60,480,42,500);
+  g.bezierCurveTo(28,470,18,420,22,350);
+  g.bezierCurveTo(26,220,20,100,28,0);
+  g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(50,10); g.quadraticCurveTo(45,220,58,470); g.stroke();
+  return new THREE.CanvasTexture(c);
+}
+function drawBaseFace(){
+  baseCtx.setTransform(1,0,0,1,0,0);
+  baseCtx.clearRect(0,0,FACE_W,FACE_H);
+  // 皮肤底做一个羽化边缘，避免 3D 头与脸贴图之间出现硬矩形
+  const bg = baseCtx.createRadialGradient(FACE_W/2, FACE_H*0.52, FACE_H*0.10, FACE_W/2, FACE_H*0.52, FACE_H*0.52);
+  bg.addColorStop(0, '#f4c6ad'); bg.addColorStop(0.72, '#f4c6ad'); bg.addColorStop(1, 'rgba(244,198,173,0)');
+  baseCtx.fillStyle = bg;
+  baseCtx.fillRect(0,0,FACE_W,FACE_H);
+  baseCtx.setTransform(FACE_S,0,0,FACE_S,FACE_TX,FACE_TY);
+  // 脸部底色
+  baseCtx.fillStyle = rg(baseCtx,320,212,18,158,[[0,'#fff1e6'],[.5,SKIN.light],[.85,SKIN.mid],[1,SKIN.dark]]);
+  facePath(baseCtx); baseCtx.fill();
+  baseCtx.save(); facePath(baseCtx); baseCtx.clip();
+  baseCtx.fillStyle = 'rgba(255,255,255,.10)';
+  baseCtx.beginPath(); baseCtx.ellipse(320,182,38,20,0,0,Math.PI*2); baseCtx.fill();
+  baseCtx.beginPath(); baseCtx.ellipse(320,350,20,9,0,0,Math.PI*2); baseCtx.fill();
+  baseCtx.restore();
+  drawBrowBase(baseCtx,278,226,1);
+  drawBrowBase(baseCtx,362,226,-1);
+  drawEye(baseCtx,280,257,-1);
+  drawEye(baseCtx,360,257,1);
+  drawNose(baseCtx);
+  drawLipsBase(baseCtx);
+}
+
+function lipPath(){
+  const p = new Path2D();
+  p.moveTo(303,330); p.quadraticCurveTo(311,323,320,327);
+  p.quadraticCurveTo(329,323,337,330); p.quadraticCurveTo(330,340,320,342);
+  p.quadraticCurveTo(310,340,303,330); p.closePath();
+  return p;
+}
+function ellipsePath(cx,cy,rx,ry,rot){ const p = new Path2D(); p.ellipse(cx,cy,rx,ry,rot||0,0,Math.PI*2); return p; }
+function clipPathFor(tool){
+  switch(tool){
+    case 'lipstick': return lipPath();
+    case 'eyeshadow': { const p=new Path2D(); p.ellipse(280,248,30,17,0,0,Math.PI*2); p.ellipse(360,248,30,17,0,0,Math.PI*2); return p; }
+    case 'blush': { const p=new Path2D(); p.ellipse(244,316,38,28,-0.12,0,Math.PI*2); p.ellipse(396,316,38,28,0.12,0,Math.PI*2); return p; }
+    case 'brow': { const p=new Path2D(); p.ellipse(278,228,34,12,-0.1,0,Math.PI*2); p.ellipse(362,228,34,12,0.1,0,Math.PI*2); return p; }
+    case 'liner': { const p=new Path2D(); p.ellipse(280,257,27,15,0,0,Math.PI*2); p.ellipse(360,257,27,15,0,0,Math.PI*2); return p; }
+    case 'huadian': return ellipsePath(320,245,94,122,0);
+    default: return ellipsePath(320,245,94,122,0);
+  }
+}
+function inEllipse(x,y,cx,cy,rx,ry,rot){
+  const c=Math.cos(-(rot||0)), s=Math.sin(-(rot||0));
+  const dx=x-cx, dy=y-cy;
+  const nx=dx*c-dy*s, ny=dx*s+dy*c;
+  return nx*nx/(rx*rx)+ny*ny/(ry*ry)<=1;
+}
+const TOOLS = {
+  lipstick: { name:'口红', icon:'💄', size:10, alpha:.92, soft:false, colors:['#c62828','#e53935','#ff6f91','#d81b60','#9b1b30','#b03a48','#f06292','#ff8a80','#7b1a2a','#e0526b'] },
+  eyeshadow: { name:'眼影', icon:'🌸', size:20, alpha:.45, soft:true, colors:['#e8a0b0','#c58bd6','#e6c46a','#a8c5c8','#f2b5a0','#8fa8d8','#d98cc7','#b48a5a','#f6d1c1','#9b7fc4'] },
+  blush: { name:'腮红', icon:'🍑', size:30, alpha:.32, soft:true, colors:['#f7a8b8','#f28a9a','#ffb3a7','#e79bb0','#f6c1bd','#f09a9a','#f7b267','#e88a8a'] },
+  brow: { name:'眉毛', icon:'🖌️', size:6, alpha:.9, soft:false, colors:['#3a2420','#5a3a2a','#7a5238','#9a7250','#c9a48a'] },
+  liner: { name:'眼线', icon:'✏️', size:3, alpha:.95, soft:false, colors:['#241416','#4a2c24','#6b4436','#8a5a40','#b0743b'] },
+  huadian: { name:'花钿', icon:'❀', size:0, alpha:1, soft:false, colors:['#c62828','#d4af37','#e91e63','#ff7043','#8e24aa','#e0b56a'] }
+};
+const TOOL_ORDER = ['lipstick','eyeshadow','blush','brow','liner','huadian'];
+const SNAP_TARGETS = {
+  lipstick: [{cx:320,cy:334,rx:22,ry:11,rot:0}],
+  eyeshadow: [{cx:280,cy:248,rx:30,ry:17,rot:0},{cx:360,cy:248,rx:30,ry:17,rot:0}],
+  blush: [{cx:244,cy:316,rx:38,ry:28,rot:-0.12},{cx:396,cy:316,rx:38,ry:28,rot:0.12}],
+  brow: [{cx:278,cy:228,rx:34,ry:12,rot:-0.1},{cx:362,cy:228,rx:34,ry:12,rot:0.1}],
+  liner: [{cx:280,cy:257,rx:27,ry:15,rot:0},{cx:360,cy:257,rx:27,ry:15,rot:0}]
+};
+function nearestPointInEllipse(px,py,t){
+  const c=Math.cos(t.rot||0), s=Math.sin(t.rot||0);
+  const dx=px-t.cx, dy=py-t.cy;
+  let x=dx*c+dy*s, y=-dx*s+dy*c;
+  const n=Math.hypot(x/t.rx,y/t.ry)||1;
+  if(n>1){ x/=n; y/=n; }
+  x*=0.82; y*=0.82;
+  const bx=x*c-y*s+t.cx, by=x*s+y*c+t.cy;
+  return { x:bx, y:by, dist:Math.hypot(px-bx,py-by) };
+}
+function snapPaintPoint(tool,x,y){
+  if(!inEllipse(x,y,320,245,126,162,0)) return null;
+  const targets=SNAP_TARGETS[tool]; if(!targets) return null;
+  let best=null;
+  for(const t of targets){ const p=nearestPointInEllipse(x,y,t); if(!best||p.dist<best.dist) best=p; }
+  return best;
+}
+function huadianStamp(ctx,x,y,color){
+  ctx.save(); ctx.translate(x,y); ctx.fillStyle=color; ctx.globalAlpha=.95;
+  for(let i=0;i<6;i++){ ctx.save(); ctx.rotate(i/6*Math.PI*2); ctx.beginPath(); ctx.ellipse(0,-9,5,10,0,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+  ctx.fillStyle='#f0d58a'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill(); ctx.restore();
+}
+function applyFaceTransform(ctx){ ctx.setTransform(FACE_S,0,0,FACE_S,FACE_TX,FACE_TY); }
+function drawStroke(ctx,st){
+  applyFaceTransform(ctx); ctx.save(); ctx.clip(clipPathFor(st.tool)); ctx.globalAlpha=st.alpha;
+  if(st.soft){
+    for(const p of st.pts){
+      const g=ctx.createRadialGradient(p.x,p.y,1,p.x,p.y,st.size*1.15);
+      g.addColorStop(0,st.color); g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,st.size*1.15,0,Math.PI*2); ctx.fill();
+    }
+  } else {
+    ctx.strokeStyle=st.color; ctx.lineWidth=st.size; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(st.pts[0].x,st.pts[0].y);
+    for(let i=1;i<st.pts.length;i++) ctx.lineTo(st.pts[i].x,st.pts[i].y);
+    if(st.pts.length===1) ctx.lineTo(st.pts[0].x+0.1,st.pts[0].y+0.1);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+let faceDirty = true;
+function redrawMakeup(){
+  mctx.setTransform(1,0,0,1,0,0); mctx.clearRect(0,0,FACE_W,FACE_H);
+  for(const act of state.actions){
+    if(act.kind==='stroke') drawStroke(mctx,act.data);
+    else { applyFaceTransform(mctx); huadianStamp(mctx,act.data.x,act.data.y,act.data.color); }
+  }
+  faceDirty = true;
+}
+function updateFaceTexture(){
+  cctx.setTransform(1,0,0,1,0,0); cctx.clearRect(0,0,FACE_W,FACE_H);
+  cctx.drawImage(baseCanvas,0,0);
+  cctx.drawImage(makeupCanvas,0,0);
+  if(faceTexture) faceTexture.needsUpdate = true;
+  faceDirty = false;
+}
+
+/* ============================================================
+   2. 三维场景 / 人物
+   ============================================================ */
+const stage = $('stage');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({antialias:true, alpha:false, preserveDrawingBuffer:true});
+} catch(e){
+  location.replace(FALLBACK_URL);
+  return;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.92;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+renderer.domElement.addEventListener('webglcontextlost', (e) => {
+  e.preventDefault();
+  location.replace(FALLBACK_URL);
+}, false);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0b1020');
+scene.fog = new THREE.FogExp2('#0b1020', 0.033);
+const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 80);
+const camTarget = new THREE.Vector3(0, 1.15, 0);
+const faceTarget = new THREE.Vector3(0, 1.62, 0.32);
+const lookAt = camTarget.clone();
+const camState = { azimuth: 0.15, polar: 1.30, radius: 5.9 };
+let faceMode = false;
+let zenMode = false;
+let camInit = false;
+
+// 灯光（夜景，降低强度避免过曝）
+scene.add(new THREE.HemisphereLight('#9ab4e8', '#2a1518', 0.42));
+const moonLight = new THREE.DirectionalLight('#ffe6c0', 0.85);
+moonLight.position.set(-3.5, 6.5, 2.5);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(1024, 1024);
+moonLight.shadow.camera.left = -5; moonLight.shadow.camera.right = 5;
+moonLight.shadow.camera.top = 6; moonLight.shadow.camera.bottom = -1;
+scene.add(moonLight);
+const rimLight = new THREE.PointLight('#8fb6ff', 0.35, 12);
+rimLight.position.set(2.5, 2.4, -3.0);
+scene.add(rimLight);
+
+// 月亮与星空
+(function buildSky(){
+  const starGeo = new THREE.BufferGeometry();
+  const pts = [];
+  for(let i=0;i<420;i++){
+    const r = 18 + Math.random()*20;
+    const theta = Math.random()*Math.PI*0.55 + Math.PI*0.05;
+    const phi = Math.random()*Math.PI*2;
+    pts.push(r*Math.sin(theta)*Math.cos(phi), r*Math.cos(theta), r*Math.sin(theta)*Math.sin(phi));
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(pts,3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color:'#cfe0ff', size:0.06, transparent:true, opacity:.8})));
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(1.35, 32, 32), new THREE.MeshBasicMaterial({color:'#ffe9c0'}));
+  moon.position.set(-5.2, 6.2, -11);
+  scene.add(moon);
+  const glowCanvas = document.createElement('canvas'); glowCanvas.width = glowCanvas.height = 128;
+  const g = glowCanvas.getContext('2d');
+  const grd = g.createRadialGradient(64,64,4,64,64,64);
+  grd.addColorStop(0,'rgba(255,235,190,.65)'); grd.addColorStop(1,'rgba(255,235,190,0)');
+  g.fillStyle = grd; g.fillRect(0,0,128,128);
+  const glowTex = new THREE.CanvasTexture(glowCanvas);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, transparent:true, depthWrite:false}));
+  glow.scale.set(7,7,1); glow.position.copy(moon.position); scene.add(glow);
+})();
+
+// 远山、地面、庭院
+(function buildGarden(){
+  const mountainMat = new THREE.MeshStandardMaterial({color:'#18283a', roughness:1});
+  for(let i=0;i<7;i++){
+    const h = 3.2 + Math.random()*3.6;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6+Math.random()*2.4, h, 5), mountainMat);
+    cone.position.set(-12 + i*4.2 + Math.random()*1.5, h/2 - 0.3, -10 - Math.random()*5);
+    cone.rotation.y = Math.random()*Math.PI;
+    scene.add(cone);
+  }
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(14, 64), new THREE.MeshStandardMaterial({color:'#16241f', roughness:1}));
+  ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+  const platform = new THREE.Mesh(new THREE.CylinderGeometry(1.66, 1.78, 0.16, 64), new THREE.MeshStandardMaterial({color:'#6f6154', roughness:.85}));
+  platform.position.y = 0.08; platform.receiveShadow = true; platform.castShadow = true; scene.add(platform);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.5, 0.025, 12, 64), new THREE.MeshStandardMaterial({color:'#d9b36a', metalness:.7, roughness:.3}));
+  ring.rotation.x = Math.PI/2; ring.position.y = 0.17; scene.add(ring);
+  // 池塘
+  const pond = new THREE.Mesh(new THREE.CircleGeometry(1.9, 48), new THREE.MeshStandardMaterial({color:'#173a4a', roughness:.25, metalness:.25}));
+  pond.rotation.x = -Math.PI/2; pond.position.set(2.6,0.02,2.4); scene.add(pond);
+  const pondRing = new THREE.Mesh(new THREE.TorusGeometry(1.92, 0.035, 8, 64), new THREE.MeshStandardMaterial({color:'#cbb47d'}));
+  pondRing.rotation.x = Math.PI/2; pondRing.position.set(2.6,0.03,2.4); scene.add(pondRing);
+  // 亭子
+  const pav = new THREE.Group(); pav.position.set(0,0,-2.7); scene.add(pav);
+  const wood = new THREE.MeshStandardMaterial({color:'#5a2730', roughness:.8});
+  const gold = new THREE.MeshStandardMaterial({color:'#d9b36a', metalness:.7, roughness:.3});
+  for(const [x,z] of [[-1.55,-1.2],[1.55,-1.2],[-1.55,1.1],[1.55,1.1]]){
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.075,0.09,2.2,12), wood);
+    col.position.set(x,1.1,z); col.castShadow = true; pav.add(col);
+  }
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.35,0.62,4), new THREE.MeshStandardMaterial({color:'#7c1f2d', roughness:.75}));
+  roof.position.y = 2.42; roof.rotation.y = Math.PI/4; roof.castShadow = true; pav.add(roof);
+  const roofTop = new THREE.Mesh(new THREE.ConeGeometry(1.4,0.4,4), gold);
+  roofTop.position.y = 2.92; roofTop.rotation.y = Math.PI/4; pav.add(roofTop);
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(3.4,0.1,2.6), wood);
+  floor.position.y = 0.05; pav.add(floor);
+  // 灯笼
+  const lanternPositions = [[-2.2,2.1,-1.2],[2.2,2.1,-1.2],[-1.1,2.6,-3.6],[1.1,2.6,-3.6],[3.6,1.9,1.8]];
+  for(const [x,y,z] of lanternPositions){
+    const lg = new THREE.Group(); lg.position.set(x,y,z); scene.add(lg);
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.19,16,16), new THREE.MeshStandardMaterial({color:'#d63b34', emissive:'#8f1c16', emissiveIntensity:.5, roughness:.5}));
+    body.scale.y = 1.25; lg.add(body);
+    const capMat = gold;
+    const cap1 = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.1,0.05,10), capMat); cap1.position.y = 0.24; lg.add(cap1);
+    const cap2 = cap1.clone(); cap2.position.y = -0.24; lg.add(cap2);
+    const string = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.7,6), new THREE.MeshBasicMaterial({color:'#5a3a20'}));
+    string.position.y = 0.62; lg.add(string);
+    const light = new THREE.PointLight('#ff9a5a', 0.85, 7); light.position.y = 0; lg.add(light);
+  }
+  // 竹林与花树
+  const bambooMat = new THREE.MeshStandardMaterial({color:'#3f6b4a', roughness:.8});
+  for(let i=0;i<14;i++){
+    const h = 2.6 + Math.random()*2.8;
+    const bam = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.055,h,6), bambooMat);
+    bam.position.set(-6 + Math.random()*2.4, h/2, -3 - Math.random()*4);
+    bam.rotation.z = (Math.random()-.5)*0.12; scene.add(bam);
+  }
+  for(let i=0;i<10;i++){
+    const h = 2.2 + Math.random()*2.2;
+    const bam = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.05,h,6), bambooMat);
+    bam.position.set(5 + Math.random()*2.4, h/2, -3 - Math.random()*4);
+    bam.rotation.z = (Math.random()-.5)*0.12; scene.add(bam);
+  }
+  // 桃花树
+  const trunkMat = new THREE.MeshStandardMaterial({color:'#4a2c22', roughness:.9});
+  const blossomMat = new THREE.MeshStandardMaterial({color:'#e69bb6', roughness:.9});
+  for(const side of [-1,1]){
+    const tx = side*4.6, tz = -1.8;
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.2,2.0,8), trunkMat);
+    trunk.position.set(tx,1.0,tz); scene.add(trunk);
+    for(let i=0;i<8;i++){
+      const bl = new THREE.Mesh(new THREE.SphereGeometry(0.28+Math.random()*0.18,8,8), blossomMat);
+      bl.position.set(tx+(Math.random()-.5)*1.8, 1.8+Math.random()*1.2, tz+(Math.random()-.5)*1.4);
+      scene.add(bl);
+    }
+  }
+  // 石板路
+  const stoneMat = new THREE.MeshStandardMaterial({color:'#5d5347', roughness:.9});
+  for(let i=0;i<8;i++){
+    const st = new THREE.Mesh(new THREE.BoxGeometry(0.28,0.04,0.42), stoneMat);
+    st.position.set(-0.2 + Math.sin(i*.5)*0.15, 0.02, 1.2 + i*0.45);
+    st.rotation.y = Math.random()*0.3; scene.add(st);
+  }
+})();
+
+// 花瓣
+const petals = [];
+(function buildPetals(){
+  const petalMat = new THREE.MeshBasicMaterial({color:'#ffb6c8', transparent:true, opacity:.8, side:THREE.DoubleSide});
+  for(let i=0;i<34;i++){
+    const p = new THREE.Mesh(new THREE.CircleGeometry(0.035,5), petalMat);
+    p.position.set((Math.random()-.5)*8, 1.0+Math.random()*3.0, (Math.random()-.5)*8);
+    p.rotation.set(Math.random()*2, Math.random()*2, Math.random()*2);
+    p.userData = { speed: 0.12+Math.random()*0.2, spin: (Math.random()-.5)*1.2, phase: Math.random()*6.28 };
+    scene.add(p); petals.push(p);
+  }
+})();
+
+// 初始化脸部纹理（必须在 buildDoll 之前）
+drawBaseFace();
+faceTexture = new THREE.CanvasTexture(compositeCanvas);
+faceTexture.encoding = THREE.sRGBEncoding;
+faceTexture.minFilter = THREE.LinearFilter;
+faceTexture.magFilter = THREE.LinearFilter;
+updateFaceTexture();
+
+// 人物
+const doll = new THREE.Group();
+scene.add(doll);
+const mats = {};
+(function buildDoll(){
+  // 材质
+  mats.skin = new THREE.MeshStandardMaterial({color:SKIN.mid, roughness:.62});
+  mats.hair = new THREE.MeshStandardMaterial({color:HAIRS[0].a, roughness:.55});
+  mats.main = new THREE.MeshStandardMaterial({color:OUTFITS[0].main, roughness:.68});
+  mats.sub = new THREE.MeshStandardMaterial({color:OUTFITS[0].sub, roughness:.7});
+  mats.trim = new THREE.MeshStandardMaterial({color:OUTFITS[0].trim, metalness:.55, roughness:.4});
+  mats.inner = new THREE.MeshStandardMaterial({color:OUTFITS[0].inner, roughness:.8});
+  mats.gold = new THREE.MeshStandardMaterial({color:'#e6c26a', metalness:.85, roughness:.28});
+  mats.jade = new THREE.MeshStandardMaterial({color:'#7fc7a8', metalness:.2, roughness:.35});
+  mats.red = new THREE.MeshStandardMaterial({color:'#b03040', metalness:.2, roughness:.35});
+  mats.pearl = new THREE.MeshStandardMaterial({color:'#fff4e6', metalness:.1, roughness:.25});
+
+  // 裙子
+  const skirtPts = [];
+  for(let i=0;i<=24;i++){
+    const t = i/24;
+    const y = 0.05 + t*0.92;
+    const r = 0.66 - t*0.35 + Math.sin(t*Math.PI)*0.025;
+    skirtPts.push(new THREE.Vector2(r,y));
+  }
+  const skirt = new THREE.Mesh(new THREE.LatheGeometry(skirtPts,48), mats.main);
+  skirt.castShadow = true; skirt.receiveShadow = true; doll.add(skirt);
+  // 裙摆花纹
+  for(let i=0;i<6;i++){
+    const a = i/6*Math.PI*2;
+    const fl = new THREE.Mesh(new THREE.SphereGeometry(0.035,8,8), mats.trim);
+    fl.position.set(Math.cos(a)*0.52, 0.22, Math.sin(a)*0.52);
+    doll.add(fl);
+  }
+  // 上衣
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23,0.31,0.38,32), mats.main);
+  torso.position.y = 1.06; torso.castShadow = true; doll.add(torso);
+  // 腰带
+  const belt = new THREE.Mesh(new THREE.TorusGeometry(0.295,0.035,12,32), mats.trim);
+  belt.rotation.x = Math.PI/2; belt.position.y = 0.95; doll.add(belt);
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.05,12,12), mats.trim);
+  knot.position.set(0,0.95,0.3); doll.add(knot);
+  // 衣领
+  for(const side of [-1,1]){
+    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.30,0.05,0.03), mats.inner);
+    collar.position.set(side*0.07,1.18,0.24);
+    collar.rotation.z = side*0.55; collar.rotation.x = -0.15; doll.add(collar);
+  }
+  // 袖子
+  for(const side of [-1,1]){
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.24,0.78,20,1,true), mats.main);
+    sleeve.position.set(side*0.40,1.02,0.02);
+    sleeve.rotation.z = side*0.95;
+    sleeve.rotation.x = 0.1;
+    sleeve.castShadow = true;
+    doll.add(sleeve);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.075,16,16), mats.skin);
+    hand.position.set(side*0.66,0.70,0.12); doll.add(hand);
+    const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.235,0.025,8,24), mats.trim);
+    cuff.position.copy(sleeve.position);
+    cuff.rotation.z = side*0.95; cuff.rotation.x = Math.PI/2 + 0.1;
+    cuff.position.x += side*0.12; cuff.position.y -= 0.30; cuff.scale.set(1,1,0.6);
+    doll.add(cuff);
+  }
+  // 脖子
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.10,0.22,20), mats.skin);
+  neck.position.y = 1.31; doll.add(neck);
+  // 头
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.34,48,32), mats.skin);
+  head.scale.set(0.94,1.04,0.92); head.position.y = 1.62; head.castShadow = true; doll.add(head);
+  // 耳朵
+  for(const side of [-1,1]){
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.07,16,16), mats.skin);
+    ear.scale.set(0.55,1,0.6); ear.position.set(side*0.315,1.61,0.02); doll.add(ear);
+  }
+  // 脸（贴图平面）
+  const faceGeo = new THREE.PlaneGeometry(0.52,0.65,24,24);
+  const pos = faceGeo.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const x = pos.getX(i);
+    pos.setZ(i, -(x*x)*0.9);
+  }
+  faceGeo.computeVertexNormals();
+  const faceMat = new THREE.MeshBasicMaterial({map:faceTexture, transparent:true});
+  const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+  faceMesh.position.set(0,1.62,0.315);
+  faceMesh.name = 'face';
+  doll.add(faceMesh);
+  window.__faceMesh = faceMesh;
+  // 头发：后脑壳
+  const hairShell = new THREE.Mesh(new THREE.SphereGeometry(0.355,48,32), mats.hair);
+  hairShell.scale.set(0.98,1.06,0.98); hairShell.position.set(0,1.63,-0.07); hairShell.castShadow = true; doll.add(hairShell);
+  // 发髻
+  for(const side of [-1,1]){
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.115,20,20), mats.hair);
+    bun.position.set(side*0.17,1.99,-0.01); bun.scale.y = 0.9; doll.add(bun);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.09,0.014,8,20), mats.gold);
+    ring.rotation.x = Math.PI/2; ring.position.set(side*0.17,1.94,-0.01); doll.add(ring);
+  }
+  // 披在身后的长发
+  const backHair = new THREE.Mesh(new THREE.CapsuleGeometry(0.17,0.86,6,16), mats.hair);
+  backHair.position.set(0,1.06,-0.24); backHair.scale.set(1.5,1,0.55); backHair.castShadow = true; doll.add(backHair);
+  // 两侧长发
+  for(const side of [-1,1]){
+    const lock = new THREE.Mesh(new THREE.CapsuleGeometry(0.075,0.72,6,12), mats.hair);
+    lock.position.set(side*0.31,1.15,0.06); lock.rotation.z = side*0.08; doll.add(lock);
+  }
+  // 刘海
+  for(const side of [-1,1]){
+    const bang = new THREE.Mesh(new THREE.SphereGeometry(0.13,20,16), mats.hair);
+    bang.scale.set(1.2,0.6,0.5); bang.position.set(side*0.10,1.91,0.285); bang.rotation.z = side*0.5; doll.add(bang);
+  }
+  // 2D 发帘 / 鬓发贴片：让脸部贴图和 3D 头发衔接更自然
+  const fringeMat = new THREE.MeshBasicMaterial({ map:makeHairFringeTexture(), transparent:true, color:HAIRS[0].a, depthWrite:false });
+  const fringe = new THREE.Mesh(new THREE.PlaneGeometry(0.64,0.32), fringeMat);
+  fringe.position.set(0,1.885,0.345); doll.add(fringe);
+  mats.hairFront = [fringeMat];
+  // 两侧 3D 鬓发，遮住脸部贴图的边缘
+  for(const side of [-1,1]){
+    const temple = new THREE.Mesh(new THREE.SphereGeometry(0.10,16,16), mats.hair);
+    temple.scale.set(0.8,2.6,0.8); temple.position.set(side*0.30,1.48,0.10); doll.add(temple);
+    const strand = new THREE.Mesh(new THREE.CapsuleGeometry(0.06,0.5,4,10), mats.hair);
+    strand.position.set(side*0.32,1.18,0.08); doll.add(strand);
+  }
+  // 首饰容器
+  window.__jewelry = { ears:new THREE.Group(), hair:new THREE.Group(), neck:new THREE.Group() };
+  for(const k in window.__jewelry) doll.add(window.__jewelry[k]);
+})();
+
+// 首饰生成
+function clearGroup(g){ while(g.children.length) g.remove(g.children[0]); }
+function buildJewelry(){
+  const j = window.__jewelry;
+  // 耳饰
+  clearGroup(j.ears);
+  for(const side of [-1,1]){
+    const g = new THREE.Group();
+    g.position.set(side*0.33,1.50,0.04);
+    if(state.earrings === 1){
+      const cand = new THREE.Mesh(new THREE.SphereGeometry(0.035,12,12), mats.pearl); cand.position.y = -0.06; g.add(cand);
+      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.006,0.006,0.05,6), mats.gold); wire.position.y = -0.01; g.add(wire);
+    } else if(state.earrings === 2){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.035,0.009,8,16), mats.gold); g.add(ring);
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.026,12,12), mats.red); bead.position.y = -0.06; g.add(bead);
+      for(let i=0;i<3;i++){
+        const tassel = new THREE.Mesh(new THREE.CylinderGeometry(0.004,0.004,0.08,6), mats.gold);
+        tassel.position.set((i-1)*0.018,-0.12,0); g.add(tassel);
+      }
+    } else if(state.earrings === 3){
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.045,0.012,8,20), mats.gold); g.add(ring);
+    }
+    j.ears.add(g);
+  }
+  // 发饰
+  clearGroup(j.hair);
+  const hp = new THREE.Group(); hp.position.set(0.19,1.99,0.06);
+  if(state.hairpin === 1){
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.28,6), mats.gold);
+    pin.rotation.z = -0.7; hp.add(pin);
+    for(let i=0;i<5;i++){ const a=i/5*Math.PI*2; const petal=new THREE.Mesh(new THREE.SphereGeometry(0.025,8,8), mats.red); petal.position.set(0.07+Math.cos(a)*0.04,0.05+Math.sin(a)*0.04,0); hp.add(petal); }
+    for(let i=0;i<3;i++){ const bead=new THREE.Mesh(new THREE.SphereGeometry(0.014,8,8), mats.gold); bead.position.set(0.09+(i-1)*0.02,-0.02-i*0.035,0); hp.add(bead); }
+  } else if(state.hairpin === 2){
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.32,6), mats.gold);
+    pin.rotation.z = -0.6; hp.add(pin);
+    const jade = new THREE.Mesh(new THREE.SphereGeometry(0.035,12,12), mats.jade);
+    jade.scale.set(1.4,0.8,1); jade.position.set(-0.13,0.02,0); hp.add(jade);
+  } else if(state.hairpin === 3){
+    for(let i=0;i<7;i++){
+      const a=i/7*Math.PI*2; const bead=new THREE.Mesh(new THREE.SphereGeometry(0.02,8,8), i%2?mats.pearl:mats.gold);
+      bead.position.set(Math.cos(a)*0.055,Math.sin(a)*0.055,0); hp.add(bead);
+    }
+    const c = new THREE.Mesh(new THREE.SphereGeometry(0.022,10,10), mats.red); hp.add(c);
+  }
+  j.hair.add(hp);
+  // 颈饰
+  clearGroup(j.neck);
+  const nk = new THREE.Group(); nk.position.set(0,1.28,0.06);
+  if(state.necklace === 1){
+    for(let i=0;i<11;i++){
+      const a = -Math.PI*0.42 + i/10*Math.PI*0.84;
+      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.018,8,8), mats.pearl);
+      bead.position.set(Math.sin(a)*0.19, -Math.abs(Math.cos(a))*0.07, Math.cos(a)*0.16); nk.add(bead);
+    }
+  } else if(state.necklace === 2){
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.17,0.012,8,32,Math.PI*0.8), mats.gold);
+    arc.position.y = -0.03; arc.rotation.set(Math.PI/2,0,Math.PI*0.1); nk.add(arc);
+    const lock = new THREE.Mesh(new THREE.BoxGeometry(0.07,0.06,0.02), mats.gold); lock.position.set(0,-0.13,0.14); nk.add(lock);
+  } else if(state.necklace === 3){
+    const cord = new THREE.Mesh(new THREE.TorusGeometry(0.16,0.007,6,28,Math.PI*0.9), mats.red);
+    cord.position.y = -0.02; cord.rotation.set(Math.PI/2,0,Math.PI*0.05); nk.add(cord);
+    const jade = new THREE.Mesh(new THREE.SphereGeometry(0.035,12,12), mats.jade);
+    jade.scale.set(0.8,1.2,0.8); jade.position.set(0,-0.15,0.14); nk.add(jade);
+  }
+  j.neck.add(nk);
+}
+
+/* ============================================================
+   3. 界面（工具 / 衣橱 / 首饰）
+   ============================================================ */
+const toolEl = $('tools'), paletteEl = $('palette'), paletteTitle = $('paletteTitle');
+TOOL_ORDER.forEach((id) => {
+  const b = document.createElement('button');
+  b.className = 'tool' + (id === state.tool ? ' active' : '');
+  b.dataset.tool = id;
+  b.innerHTML = TOOLS[id].icon + ' ' + TOOLS[id].name;
+  b.addEventListener('click', () => {
+    state.tool = id; state.color = TOOLS[id].colors[0];
+    document.querySelectorAll('.tool').forEach((x) => x.classList.toggle('active', x.dataset.tool === id));
+    renderPalette(); sndTap();
+  });
+  toolEl.appendChild(b);
+});
+function renderPalette(){
+  const cfg = TOOLS[state.tool];
+  paletteTitle.textContent = cfg.name + '颜色';
+  paletteEl.innerHTML = '';
+  cfg.colors.forEach((color) => {
+    const d = document.createElement('div');
+    d.className = 'sw' + (color === state.color ? ' active' : '');
+    d.style.background = color;
+    d.addEventListener('click', () => { state.color = color; renderPalette(); sndSwatch(); });
+    paletteEl.appendChild(d);
+  });
+}
+const outfitList = $('outfitList'), hairList = $('hairList');
+function renderOutfits(){
+  outfitList.innerHTML = '';
+  OUTFITS.forEach((o, i) => {
+    const el = document.createElement('div');
+    el.className = 'opt' + (i === state.outfit ? ' active' : '');
+    el.innerHTML = '<div class="dot" style="background:linear-gradient(135deg,' + o.main + ' 55%,' + o.trim + ' 55%)"></div><div class="lbl">' + o.name + '</div>';
+    el.addEventListener('click', () => { applyOutfit(i); sndDress(); });
+    outfitList.appendChild(el);
+  });
+}
+function renderHairs(){
+  hairList.innerHTML = '';
+  ['墨黑', '深棕', '栗色'].forEach((name, i) => {
+    const el = document.createElement('div');
+    el.className = 'opt' + (i === state.hairColor ? ' active' : '');
+    el.innerHTML = '<div class="dot" style="background:' + HAIRS[i].a + '"></div><div class="lbl">' + name + '</div>';
+    el.addEventListener('click', () => { applyHair(i); sndDress(); });
+    hairList.appendChild(el);
+  });
+}
+function applyOutfit(i){
+  state.outfit = i;
+  const o = OUTFITS[i];
+  mats.main.color.set(o.main); mats.sub.color.set(o.sub);
+  mats.trim.color.set(o.trim); mats.inner.color.set(o.inner);
+  renderOutfits();
+}
+function applyHair(i){
+  state.hairColor = i;
+  mats.hair.color.set(HAIRS[i].a);
+  if(mats.hairFront) mats.hairFront.forEach((m) => m.color.set(HAIRS[i].a));
+  renderHairs();
+}
+const JEWELRY = [
+  { key:'earrings', name:'耳饰', opts:[{v:0,l:'不戴'},{v:1,l:'珍珠耳坠'},{v:2,l:'红玉流苏'},{v:3,l:'金环'}] },
+  { key:'hairpin', name:'发饰', opts:[{v:0,l:'不戴'},{v:1,l:'步摇'},{v:2,l:'玉簪'},{v:3,l:'珠花'}] },
+  { key:'necklace', name:'项链', opts:[{v:0,l:'不戴'},{v:1,l:'珍珠项链'},{v:2,l:'金锁'},{v:3,l:'红绳玉坠'}] }
+];
+let jIdx = 0;
+const jewelryTabs = $('jewelryTabs'), jewelryList = $('jewelryList');
+function renderJewelryTabs(){
+  jewelryTabs.innerHTML = '';
+  JEWELRY.forEach((cat, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (i === jIdx ? ' active' : '');
+    b.style.height = '40px'; b.style.fontSize = '16px';
+    b.textContent = cat.name;
+    b.addEventListener('click', () => { jIdx = i; renderJewelryTabs(); renderJewelryList(); sndTap(); });
+    jewelryTabs.appendChild(b);
+  });
+}
+function renderJewelryList(){
+  const cat = JEWELRY[jIdx];
+  jewelryList.innerHTML = '';
+  cat.opts.forEach((o) => {
+    const el = document.createElement('div');
+    el.className = 'opt' + (state[cat.key] === o.v ? ' active' : '');
+    el.innerHTML = '<div class="dot" style="background:' + (o.v === 0 ? '#d9b36a' : o.v === 1 ? '#fff4e6' : o.v === 2 ? '#b03040' : '#7fc7a8') + '"></div><div class="lbl">' + o.l + '</div>';
+    el.addEventListener('click', () => { state[cat.key] = o.v; buildJewelry(); renderJewelryList(); sndDress(); });
+    jewelryList.appendChild(el);
+  });
+}
+renderPalette(); renderOutfits(); renderHairs(); renderJewelryTabs(); renderJewelryList();
+buildJewelry();
+
+function switchTab(name){
+  document.querySelectorAll('#tabs .tab').forEach((x) => x.classList.toggle('active', x.dataset.tab === name));
+  const map = { makeup:'tabMakeup', dress:'tabDress', jewelry:'tabJewelry', photo:'tabPhoto' };
+  ['tabMakeup','tabDress','tabJewelry','tabPhoto'].forEach((id) => $(id).classList.toggle('hidden', id !== map[name]));
+  if(name !== 'makeup' && faceMode) setFaceMode(false);
+}
+document.querySelectorAll('#tabs .tab').forEach((b) => {
+  b.addEventListener('click', () => { switchTab(b.dataset.tab); sndTap(); });
+});
+
+/* ============================================================
+   4. 音效
+   ============================================================ */
+let actx = null;
+let muted = store.get('xt3d_muted', '0') === '1';
+function ensureAudio(){
+  if(!actx){ try { const AC = window.AudioContext || window.webkitAudioContext; if(AC) actx = new AC(); } catch(e){ actx = null; } }
+  if(actx && actx.state === 'suspended') actx.resume().catch(function(){});
+}
+function tone(freq,dur,type,vol,delay){
+  if(muted || !actx) return;
+  try {
+    const t = actx.currentTime + (delay||0);
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type||'sine'; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol||0.04,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.08));
+    o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+(dur||0.08)+0.03);
+  } catch(e){}
+}
+const sndTap = () => tone(720,0.05,'sine',0.035);
+const sndSwatch = () => tone(880,0.07,'triangle',0.03);
+const sndPaint = () => tone(520+Math.random()*120,0.035,'sine',0.015);
+const sndDress = () => { tone(660,0.07,'sine',0.03); tone(990,0.09,'sine',0.03,0.05); };
+const sndUndo = () => tone(420,0.08,'sine',0.03);
+const sndPhoto = () => { tone(880,0.08,'sine',0.04); tone(1320,0.12,'sine',0.04,0.08); };
+const sndLock = () => { tone(520,0.25,'sine',0.04); tone(392,0.3,'sine',0.04,0.2); tone(262,0.5,'sine',0.04,0.45); };
+function renderMute(){ $('btnMute').textContent = muted ? '🔇' : '🔊'; }
+renderMute();
+$('btnMute').addEventListener('click', () => {
+  muted = !muted; store.set('xt3d_muted', muted ? '1' : '0');
+  renderMute(); if(!muted){ ensureAudio(); sndTap(); }
+});
+
+function toast(msg, ms){
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms||2600);
+}
+
+/* ============================================================
+   5. 相机 & 交互（旋转 / 缩放 / 放大化妆）
+   ============================================================ */
+const canvas = renderer.domElement;
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const pointers = new Map();
+let dragging = false, lastX = 0, lastY = 0, movedFar = false;
+let painting = false;
+let pinchDist = 0, pinchRadius = 0;
+
+function setFaceMode(on){
+  faceMode = on;
+  $('btnFace').textContent = on ? '🧍 查看整体' : '🔍 放大化妆';
+  if(on) switchTab('makeup');
+}
+$('btnFace').addEventListener('click', () => { setFaceMode(!faceMode); sndTap(); toast(faceMode ? '放大啦，用手指在脸上涂吧～' : '回到整体视角'); });
+
+function desiredCamera(){
+  if(faceMode) return { pos: new THREE.Vector3(0,1.62,1.50), target: new THREE.Vector3(0,1.62,0.34) };
+  const { azimuth, polar, radius } = camState;
+  return {
+    pos: new THREE.Vector3(
+      Math.sin(polar)*Math.sin(azimuth)*radius,
+      1.02 + Math.cos(polar)*radius,
+      Math.sin(polar)*Math.cos(azimuth)*radius
+    ),
+    target: new THREE.Vector3(0,1.02,0)
+  };
+}
+const lookTarget = camTarget.clone();
+function updateCamera(){
+  const d = desiredCamera();
+  if(!camInit){
+    camera.position.copy(d.pos); lookTarget.copy(d.target); camInit = true;
+  } else {
+    camera.position.lerp(d.pos, 0.16);
+    lookTarget.lerp(d.target, 0.16);
+  }
+  camera.lookAt(lookTarget);
+}
+
+function rayFace(clientX, clientY){
+  const rect = canvas.getBoundingClientRect();
+  ndc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  ndc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObject(window.__faceMesh, false);
+  if(hit.length && hit[0].uv){
+    const x = hit[0].uv.x * FACE_W;
+    const y = (1 - hit[0].uv.y) * FACE_H;
+    return { x:(x - FACE_TX) / FACE_S, y:(y - FACE_TY) / FACE_S };
+  }
+  return null;
+}
+let curStroke = null;
+function paintStartAt(local){
+  const tool = state.tool;
+  if(tool === 'huadian'){
+    if(!inEllipse(local.x, local.y, 320, 245, 160, 235, 0)) return;
+    state.actions.push({ kind:'sticker', data:{ x:local.x, y:local.y, color:state.color } });
+    redrawMakeup(); sndSwatch(); return;
+  }
+  const snapped = snapPaintPoint(tool, local.x, local.y);
+  if(!snapped) return;
+  const cfg = TOOLS[tool];
+  curStroke = { tool, color:state.color, size:cfg.size, alpha:cfg.alpha, soft:!!cfg.soft, pts:[{ x:snapped.x, y:snapped.y }] };
+  state.actions.push({ kind:'stroke', data:curStroke });
+  redrawMakeup(); sndPaint();
+}
+function paintMoveAt(local){
+  if(!curStroke) return;
+  const last = curStroke.pts[curStroke.pts.length-1];
+  if(Math.hypot(local.x-last.x, local.y-last.y) < 1.5) return;
+  curStroke.pts.push({ x:local.x, y:local.y });
+  redrawMakeup();
+}
+function paintEnd(){ curStroke = null; }
+
+canvas.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if(pointers.size === 2){
+    const arr = Array.from(pointers.values());
+    pinchDist = Math.hypot(arr[0].x-arr[1].x, arr[0].y-arr[1].y);
+    pinchRadius = camState.radius;
+    dragging = false; painting = false; curStroke = null;
+    return;
+  }
+  if(faceMode){
+    const local = rayFace(e.clientX, e.clientY);
+    if(local){ painting = true; paintStartAt(local); return; }
+  }
+  dragging = true; movedFar = false; lastX = e.clientX; lastY = e.clientY;
+});
+canvas.addEventListener('pointermove', (e) => {
+  if(pointers.has(e.pointerId)) pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  if(pointers.size === 2){
+    const arr = Array.from(pointers.values());
+    const d = Math.hypot(arr[0].x-arr[1].x, arr[0].y-arr[1].y);
+    if(pinchDist > 0){ camState.radius = clamp(pinchRadius * (pinchDist / d), 2.6, 7.2); }
+    return;
+  }
+  if(painting){
+    const local = rayFace(e.clientX, e.clientY);
+    if(local) paintMoveAt(local);
+    e.preventDefault(); return;
+  }
+  if(!dragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  if(Math.abs(dx) + Math.abs(dy) > 3) movedFar = true;
+  camState.azimuth -= dx * 0.008;
+  camState.polar = clamp(camState.polar - dy * 0.006, 0.75, 1.65);
+});
+function endPointer(e){
+  pointers.delete(e.pointerId);
+  if(painting){ painting = false; paintEnd(); return; }
+  if(dragging && !movedFar && !faceMode && !window.__forceView){
+    const local = rayFace(e.clientX, e.clientY);
+    if(local){ setFaceMode(true); toast('放大啦，可以开始化妆了～'); }
+  }
+  dragging = false;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('wheel', (e) => {
+  if(faceMode) return;
+  e.preventDefault();
+  camState.radius = clamp(camState.radius + e.deltaY * 0.003, 2.6, 7.2);
+}, { passive:false });
+
+$('btnUndo').addEventListener('click', () => {
+  if(state.actions.length) state.actions.pop();
+  redrawMakeup(); sndUndo();
+});
+$('btnClear').addEventListener('click', () => {
+  state.actions = []; redrawMakeup(); sndUndo(); toast('妆卸干净啦～');
+});
+
+/* ============================================================
+   6. 欣赏 / 拍照
+   ============================================================ */
+$('btnZen').addEventListener('click', () => {
+  setFaceMode(false);
+  document.body.classList.add('zen');
+  sndTap();
+});
+$('btnZenExit').addEventListener('click', () => {
+  document.body.classList.remove('zen');
+  sndTap();
+});
+$('photoBtn').addEventListener('click', () => {
+  ensureAudio();
+  renderer.render(scene, camera);
+  const src = renderer.domElement;
+  const c = document.createElement('canvas');
+  c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d');
+  x.drawImage(src, 0, 0);
+  x.fillStyle = 'rgba(255,248,235,.92)';
+  x.font = '600 ' + Math.round(Math.max(16, Math.min(30, c.width / 44))) + 'px "STKaiti","KaiTi",serif';
+  x.textAlign = 'center';
+  x.fillText('小棠的梳妆台', c.width/2, c.height - Math.round(18 * (c.width / src.clientWidth || 1)));
+  $('photoImg').src = c.toDataURL('image/png');
+  $('photoModal').classList.remove('hidden');
+  sndPhoto();
+});
+$('btnPhotoClose').addEventListener('click', () => {
+  $('photoModal').classList.add('hidden');
+  sndTap();
+});
+
+/* ============================================================
+   7. 20 分钟限制 + 家长重置
+   ============================================================ */
+const PLAY_LIMIT = 20 * 60 * 1000;
+const REST_TIME = 60 * 60 * 1000;
+const game = {
+  playMs: parseInt(store.get('xt3d_play_ms', '0'), 10) || 0,
+  lockUntil: parseInt(store.get('xt3d_lock_until', '0'), 10) || 0,
+  locked: false, started: false, warned: false, saveTick: 0
+};
+function fmtCountdown(ms){
+  const total = Math.max(0, Math.ceil(ms/1000));
+  const h = Math.floor(total/3600), m = Math.floor((total%3600)/60), s = total%60;
+  return (h>0 ? h + ':' : '') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function savePlay(){
+  store.set('xt3d_play_ms', String(Math.round(game.playMs)));
+  store.set('xt3d_lock_until', String(game.lockUntil));
+}
+function showLock(){
+  $('lockOverlay').classList.remove('hidden');
+  $('startOverlay').classList.add('hidden');
+  $('lockCountdown').textContent = fmtCountdown(game.lockUntil - Date.now());
+}
+function hideLock(){ $('lockOverlay').classList.add('hidden'); }
+function lock(){
+  game.locked = true; game.started = false;
+  game.lockUntil = Date.now() + REST_TIME;
+  game.playMs = PLAY_LIMIT; savePlay(); showLock(); sndLock();
+}
+function unlock(){
+  game.locked = false; game.playMs = 0; game.lockUntil = 0; game.warned = false;
+  savePlay(); hideLock(); $('startOverlay').classList.remove('hidden');
+  toast('休息好啦，可以继续玩啦～');
+}
+function tick(){
+  const t = Date.now();
+  if(game.locked){
+    const left = game.lockUntil - t;
+    if(left <= 0) unlock();
+    else $('lockCountdown').textContent = fmtCountdown(left);
+    return;
+  }
+  if(!game.started || document.hidden) return;
+  game.playMs += 1000; game.saveTick++;
+  if(game.saveTick >= 5){ game.saveTick = 0; savePlay(); }
+  if(game.playMs >= PLAY_LIMIT) lock();
+  else if(game.playMs >= PLAY_LIMIT - 120000 && !game.warned){
+    game.warned = true; toast('再玩一小会儿，就要让眼睛休息啦～', 3200);
+  }
+}
+function resetTimer(){
+  game.playMs = 0; game.lockUntil = 0; game.locked = false; game.started = false; game.warned = false;
+  savePlay(); hideLock(); $('parentModal').classList.add('hidden');
+  $('startOverlay').classList.remove('hidden');
+  toast('计时已重置，可以重新开始啦～');
+}
+$('btnStart').addEventListener('click', () => {
+  ensureAudio(); game.started = true;
+  $('startOverlay').classList.add('hidden');
+  toast('拖动可以旋转，点「放大化妆」贴近小棠的脸～', 3200);
+  sndTap();
+});
+$('btnParent').addEventListener('click', () => { $('parentModal').classList.remove('hidden'); });
+$('btnParent2').addEventListener('click', () => { $('parentModal').classList.remove('hidden'); });
+$('btnParentClose').addEventListener('click', () => { $('parentModal').classList.add('hidden'); });
+$('btnResetTimer').addEventListener('click', resetTimer);
+setInterval(tick, 1000);
+document.addEventListener('visibilitychange', savePlay);
+window.addEventListener('pagehide', savePlay);
+window.addEventListener('beforeunload', savePlay);
+
+/* ============================================================
+   8. 自适应 & 启动
+   ============================================================ */
+function resize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  document.body.classList.toggle('portrait', w < h * 1.05);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const params = new URLSearchParams(location.search);
+const flink = document.getElementById('fallbackLink'); if(flink) flink.href = FALLBACK_URL;
+if(params.has('dev')){
+  game.started = true;
+  $('startOverlay').classList.add('hidden');
+}
+if(params.has('view')){
+  window.__forceView = true;
+  setFaceMode(false);
+}
+if(params.has('face')) setFaceMode(true);
+if(game.lockUntil > Date.now()){
+  game.locked = true; showLock();
+} else if(game.lockUntil && game.lockUntil <= Date.now()){
+  game.playMs = 0; game.lockUntil = 0; savePlay();
+}
+if(game.playMs >= PLAY_LIMIT && !game.locked) lock();
+
+const clock = new THREE.Clock();
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(0.05, clock.getDelta());
+  const t = clock.elapsedTime;
+  for(const p of petals){
+    p.position.y -= p.userData.speed * dt;
+    p.position.x += Math.sin(t * 0.6 + p.userData.phase) * 0.0015;
+    p.rotation.z += p.userData.spin * dt;
+    if(p.position.y < 0.1){ p.position.y = 3.6; p.position.x = (Math.random()-0.5)*8; p.position.z = (Math.random()-0.5)*8; }
+  }
+  if(faceDirty) updateFaceTexture();
+  updateCamera();
+  renderer.render(scene, camera);
+}
+animate();
+})();
+</script>
+</body>
+</html>
