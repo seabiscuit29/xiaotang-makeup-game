@@ -242,8 +242,8 @@
     accessory: 0,           // 0 无 / 1 步摇 / 2 发簪
     tool: 'lipstick',
     color: '#c62828',
-    strokes: [],
-    stickers: []
+    // 统一操作历史：按时间顺序保存「笔画」和「花钿贴纸」，撤销时严格后进先出
+    actions: []
   };
 
   const LAYOUT = { k: 1, ox: 0, oy: 0, W: 0, H: 0, DPR: 1, areaW: 0, areaH: 0 };
@@ -1013,10 +1013,13 @@
   function redrawMakeup() {
     mctx.setTransform(LAYOUT.DPR, 0, 0, LAYOUT.DPR, 0, 0);
     mctx.clearRect(0, 0, LAYOUT.W, LAYOUT.H);
-    for (const st of state.strokes) drawStroke(mctx, st);
-    for (const sp of state.stickers) {
-      applyTransform(mctx);
-      huadianStamp(mctx, sp.x, sp.y, sp.color);
+    for (const act of state.actions) {
+      if (act.kind === 'stroke') {
+        drawStroke(mctx, act.data);
+      } else if (act.kind === 'sticker') {
+        applyTransform(mctx);
+        huadianStamp(mctx, act.data.x, act.data.y, act.data.color);
+      }
     }
   }
 
@@ -1035,7 +1038,7 @@
     const tool = state.tool;
     if (tool === 'huadian') {
       if (!inRegion('huadian', p.x, p.y)) return;
-      state.stickers.push({ x: p.x, y: p.y, color: state.color });
+      state.actions.push({ kind: 'sticker', data: { x: p.x, y: p.y, color: state.color } });
       redrawMakeup();
       sndSwatch();
       return;
@@ -1049,7 +1052,7 @@
     }
     const cfg = TOOLS[tool];
     curStroke = { tool, color: state.color, size: cfg.size, alpha: cfg.alpha, soft: !!cfg.soft, pts: [{ x: p.x, y: p.y }] };
-    state.strokes.push(curStroke);
+    state.actions.push({ kind: 'stroke', data: curStroke });
     drawStroke(mctx, curStroke);
     sndPaint();
   }
@@ -1234,14 +1237,12 @@
   });
 
   $('btnUndo').addEventListener('click', () => {
-    if (state.strokes.length) state.strokes.pop();
-    else if (state.stickers.length) state.stickers.pop();
+    if (state.actions.length) state.actions.pop();
     redrawMakeup();
     sndUndo();
   });
   $('btnClear').addEventListener('click', () => {
-    state.strokes = [];
-    state.stickers = [];
+    state.actions = [];
     redrawMakeup();
     sndUndo();
     toast('妆卸干净啦，重新开始吧～');
