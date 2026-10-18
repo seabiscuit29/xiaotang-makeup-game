@@ -107,6 +107,10 @@
     box-shadow:0 8px 20px rgba(120,20,30,.35);margin-top:14px;letter-spacing:2px;}
   .primary:active{transform:scale(.97);}
   .tiny{font-size:13px;color:#a08a74;margin:14px 0 0;line-height:1.5;}
+  .linkbtn{background:none;border:none;color:#9c6a3e;font-size:13px;text-decoration:underline;cursor:pointer;font-family:inherit;padding:0;margin:0;}
+  .parentbtns{display:flex;gap:8px;justify-content:center;margin-top:12px;}
+  .parentbtns button{height:46px;border-radius:14px;border:2px solid rgba(198,150,76,.55);background:#fff8ec;
+    color:#7c1f2d;font-size:16px;font-weight:800;font-family:inherit;padding:0 14px;cursor:pointer;}
   .moon{font-size:56px;line-height:1;margin-top:4px;}
   .countdown{font-size:52px;font-weight:900;color:#8f2233;letter-spacing:2px;font-variant-numeric:tabular-nums;
     font-family:"SF Mono",Menlo,monospace;margin:6px 0 4px;}
@@ -171,7 +175,7 @@
     <div class="rule">选一个妆品，在小棠脸上点一点、涂一涂<br>头发、衣服、首饰都可以换</div>
     <div class="rule small">每次玩 20 分钟，就要休息 1 小时哦</div>
     <button class="primary" id="btnStart">开始化妆</button>
-    <p class="tiny">无广告 · 无联网 · 无充值 · 作品只存在这台设备上</p>
+    <p class="tiny">无广告 · 无联网 · 无充值 · 作品只存在这台设备上 &nbsp; <button class="linkbtn" id="btnParent2d">家长</button></p>
   </div>
 </div>
 
@@ -182,6 +186,22 @@
     <p class="tiny" style="margin:12px 0 2px;font-size:15px;">下次可以玩的时间</p>
     <div class="countdown" id="lockCountdown">59:59</div>
     <p class="tiny">休息 1 小时后自动解锁<br>本游戏无广告 · 无联网 · 无充值</p>
+    <button class="linkbtn" id="btnParent2dLock">家长入口</button>
+  </div>
+</div>
+
+<div id="parentModal2d" class="overlay hidden">
+  <div class="card">
+    <h2>家长入口</h2>
+    <p class="tiny" style="font-size:14px;line-height:1.7;color:#5c3a22;">
+      为了防止孩子通过刷新页面绕过限制，游玩时间和休息倒计时会保存在本机。<br>
+      您可以在这里重置计时（重置后需要重新开始 20 分钟）。
+    </p>
+    <div class="parentbtns">
+      <button id="btnReset2d">重置游玩时间</button>
+      <button id="btnParent2dClose">关闭</button>
+    </div>
+    <p class="tiny">“家长关闭限制”功能将在后续版本提供</p>
   </div>
 </div>
 
@@ -1482,6 +1502,23 @@
   }
 
   $('btnStart').addEventListener('click', startGame);
+
+  function resetTimer2d() {
+    game.playMs = 0;
+    game.lockUntil = 0;
+    game.locked = false;
+    game.started = false;
+    game.warned = false;
+    savePlay();
+    hideLock();
+    $('parentModal2d').classList.add('hidden');
+    $('startOverlay').classList.remove('hidden');
+    toast('计时已重置，可以重新开始啦～');
+  }
+  $('btnParent2d').addEventListener('click', () => { $('parentModal2d').classList.remove('hidden'); });
+  $('btnParent2dLock').addEventListener('click', () => { $('parentModal2d').classList.remove('hidden'); });
+  $('btnParent2dClose').addEventListener('click', () => { $('parentModal2d').classList.add('hidden'); });
+  $('btnReset2d').addEventListener('click', resetTimer2d);
 
   function boot() {
     renderMute();
