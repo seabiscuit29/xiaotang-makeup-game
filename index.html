@@ -1090,7 +1090,39 @@
   }
 
   let curStroke = null;
-  let lastToastPaint = 0;
+
+  // 妆容「自动吸附」：点在脸部附近时自动吸到对应部位，避免反复提示、涂不上去
+  const SNAP_TARGETS = {
+    lipstick: [{ cx: 320, cy: 334, rx: 22, ry: 11, rot: 0 }],
+    eyeshadow: [{ cx: 280, cy: 248, rx: 30, ry: 17, rot: 0 }, { cx: 360, cy: 248, rx: 30, ry: 17, rot: 0 }],
+    blush: [{ cx: 244, cy: 316, rx: 38, ry: 28, rot: -0.12 }, { cx: 396, cy: 316, rx: 38, ry: 28, rot: 0.12 }],
+    brow: [{ cx: 278, cy: 228, rx: 34, ry: 12, rot: -0.1 }, { cx: 362, cy: 228, rx: 34, ry: 12, rot: 0.1 }],
+    liner: [{ cx: 280, cy: 257, rx: 27, ry: 15, rot: 0 }, { cx: 360, cy: 257, rx: 27, ry: 15, rot: 0 }]
+  };
+  function nearestPointInEllipse(px, py, t) {
+    const cos = Math.cos(t.rot || 0), sin = Math.sin(t.rot || 0);
+    const dx = px - t.cx, dy = py - t.cy;
+    let x = dx * cos + dy * sin;
+    let y = -dx * sin + dy * cos;
+    const norm = Math.hypot(x / t.rx, y / t.ry) || 1;
+    if (norm > 1) { x = x / norm; y = y / norm; }
+    x *= 0.82; y *= 0.82; // 收进区域内，确保落笔一定能画上
+    const bx = x * cos - y * sin + t.cx;
+    const by = x * sin + y * cos + t.cy;
+    return { x: bx, y: by, dist: Math.hypot(px - bx, py - by) };
+  }
+  function snapPaintPoint(tool, x, y) {
+    // 点在脸/头部附近就自动吸附到对应部位；点到脸外面则不响应
+    if (!inEllipse(x, y, 320, 245, 126, 162, 0)) return null;
+    const targets = SNAP_TARGETS[tool];
+    if (!targets) return null;
+    let best = null;
+    for (const t of targets) {
+      const p = nearestPointInEllipse(x, y, t);
+      if (!best || p.dist < best.dist) best = p;
+    }
+    return best;
+  }
 
   function toLocal(clientX, clientY) {
     const r = makeup.getBoundingClientRect();
@@ -1103,21 +1135,17 @@
   function paintStart(p) {
     const tool = state.tool;
     if (tool === 'huadian') {
-      if (!inRegion('huadian', p.x, p.y)) return;
+      // 花钿：点在小棠的脸上、头发上都可以贴
+      if (!inEllipse(p.x, p.y, 320, 245, 160, 235, 0)) return;
       state.actions.push({ kind: 'sticker', data: { x: p.x, y: p.y, color: state.color } });
       redrawMakeup();
       sndSwatch();
       return;
     }
-    if (!inRegion(tool, p.x, p.y)) {
-      if (now() - lastToastPaint > 4000) {
-        lastToastPaint = now();
-        toast(toolHint(tool));
-      }
-      return;
-    }
+    const snapped = snapPaintPoint(tool, p.x, p.y);
+    if (!snapped) return; // 没点在小棠身上：安静地不响应，不弹提示
     const cfg = TOOLS[tool];
-    curStroke = { tool, color: state.color, size: cfg.size, alpha: cfg.alpha, soft: !!cfg.soft, pts: [{ x: p.x, y: p.y }] };
+    curStroke = { tool, color: state.color, size: cfg.size, alpha: cfg.alpha, soft: !!cfg.soft, pts: [{ x: snapped.x, y: snapped.y }] };
     state.actions.push({ kind: 'stroke', data: curStroke });
     drawStroke(mctx, curStroke);
     sndPaint();
@@ -1148,11 +1176,6 @@
     mctx.restore();
   }
   function paintEnd() { curStroke = null; }
-
-  function toolHint(tool) {
-    const cfg = TOOLS[tool];
-    return '在小棠的' + cfg.name + '位置点一点、涂一涂哦～';
-  }
 
   function attachPaintEvents() {
     makeup.addEventListener('pointerdown', (e) => {
