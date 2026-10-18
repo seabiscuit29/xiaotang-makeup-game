@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>小棠的梳妆台</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#2b1218;touch-action:none;overscroll-behavior:none;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;color:#3a2320;
+    -webkit-user-select:none;user-select:none;}
+  #stage{position:fixed;inset:0;z-index:1;}
+  #stage canvas{position:absolute;left:0;top:0;display:block;}
+  #makeup{pointer-events:auto;touch-action:none;z-index:3;}
+  #scene{z-index:2;pointer-events:none;}
+
+  /* ---------- 顶部 HUD ---------- */
+  #hud{position:fixed;left:14px;right:14px;top:10px;display:flex;align-items:center;justify-content:space-between;
+    z-index:20;pointer-events:none;}
+  #brand{font-family:"STKaiti","KaiTi","Kaiti SC",serif;font-size:26px;font-weight:700;color:#7c1f2d;
+    background:linear-gradient(180deg,rgba(255,248,235,.96),rgba(255,240,220,.9));
+    border:2px solid rgba(198,150,76,.65);border-radius:16px;padding:8px 18px;
+    box-shadow:0 4px 16px rgba(60,20,20,.18);pointer-events:auto;white-space:nowrap;letter-spacing:1px;}
+  #brand span{font-size:15px;color:#9c6a3e;font-family:"PingFang SC",sans-serif;letter-spacing:0;}
+  #hudRight{display:flex;gap:10px;pointer-events:auto;}
+  .hudbtn{border:2px solid rgba(198,150,76,.65);background:rgba(255,248,235,.94);color:#7c1f2d;
+    border-radius:14px;min-width:64px;height:46px;font-size:19px;font-weight:700;cursor:pointer;
+    box-shadow:0 3px 10px rgba(60,20,20,.14);}
+  .hudbtn:active{transform:scale(.95);background:#ffeccf;}
+
+  /* ---------- 右侧 / 底部面板 ---------- */
+  #panel{position:fixed;z-index:30;background:linear-gradient(180deg,rgba(255,250,242,.97),rgba(253,240,222,.97));
+    border:2px solid rgba(198,150,76,.6);border-radius:22px;box-shadow:0 10px 30px rgba(50,15,20,.25);
+    padding:12px;display:flex;flex-direction:column;gap:10px;overflow:hidden;}
+  body:not(.portrait) #panel{top:78px;right:12px;bottom:12px;width:352px;}
+  body.portrait #panel{left:8px;right:8px;bottom:8px;height:min(40vh,385px);padding:10px 10px 8px;}
+  #tabs{display:flex;gap:8px;}
+  .tab{flex:1;height:48px;border-radius:14px;border:2px solid rgba(198,150,76,.55);
+    background:#fff8ec;color:#8a5a2b;font-size:20px;font-weight:800;font-family:inherit;cursor:pointer;}
+  .tab.active{background:linear-gradient(180deg,#a92b3c,#7c1622);color:#ffe9c2;border-color:#e6c47a;
+    box-shadow:0 4px 12px rgba(120,20,30,.35);}
+  .tabpane{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:9px;
+    -webkit-overflow-scrolling:touch;padding-right:2px;}
+  .tabpane.hidden{display:none;}
+  #tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .tool{height:56px;border-radius:14px;border:2px solid rgba(198,150,76,.45);background:#fffaf0;color:#5c3a22;
+    font-size:17px;font-weight:800;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;}
+  .tool.active{background:linear-gradient(180deg,#ffe6b8,#f6cf8d);border-color:#b98a3f;color:#7c1f2d;
+    box-shadow:0 0 0 3px rgba(224,181,106,.35) inset;}
+  .tool:active{transform:scale(.96);}
+  #palette{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:2px;}
+  .sw{height:46px;border-radius:50%;border:3px solid rgba(255,255,255,.85);box-shadow:0 2px 6px rgba(60,20,20,.25);cursor:pointer;position:relative;}
+  .sw.active{outline:4px solid #e0b56a;outline-offset:2px;}
+  .actions{display:flex;gap:9px;margin-top:auto;padding-top:4px;}
+  .actions button{flex:1;height:50px;border-radius:14px;border:2px solid rgba(198,150,76,.55);
+    background:#fff8ec;color:#7c1f2d;font-size:18px;font-weight:800;font-family:inherit;cursor:pointer;}
+  .actions button:active{transform:scale(.96);background:#ffeccf;}
+  .section-title{font-size:15px;color:#9c6a3e;font-weight:700;padding-left:2px;}
+
+  /* 衣橱 */
+  #dressTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  #dressTabs button{height:42px;border-radius:12px;border:2px solid rgba(198,150,76,.45);background:#fffaf0;
+    color:#8a5a2b;font-size:16px;font-weight:800;font-family:inherit;cursor:pointer;}
+  #dressTabs button.active{background:linear-gradient(180deg,#a92b3c,#7c1622);color:#ffe9c2;border-color:#e6c47a;}
+  #dressList{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:2px;}
+  .opt{border-radius:14px;border:2px solid rgba(198,150,76,.45);background:#fffaf0;padding:8px 6px;
+    display:flex;align-items:center;gap:8px;cursor:pointer;min-height:58px;font-family:inherit;}
+  .opt.active{border-color:#b98a3f;background:#fff0d4;box-shadow:0 0 0 3px rgba(224,181,106,.35) inset;}
+  .opt:active{transform:scale(.97);}
+  .dot{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.8);box-shadow:0 1px 4px rgba(0,0,0,.2);flex:none;}
+  .opt .lbl{font-size:15px;font-weight:700;color:#5c3a22;line-height:1.15;}
+
+  /* 拍照 */
+  #btnPhoto{height:64px;border-radius:18px;border:2px solid #e6c47a;font-size:22px;font-weight:900;
+    background:linear-gradient(180deg,#b03040,#7c1622);color:#ffe9c2;font-family:inherit;cursor:pointer;
+    box-shadow:0 6px 16px rgba(120,20,30,.3);}
+  #btnPhoto:active{transform:scale(.97);}
+  .hint{font-size:14px;color:#8a5a2b;line-height:1.5;margin:4px 2px;}
+
+  /* ---------- 提示 ---------- */
+  #toast{position:fixed;left:50%;bottom:calc(12px + 30vh);transform:translateX(-50%) translateY(10px);
+    background:rgba(60,22,26,.92);color:#ffe9c2;font-size:17px;font-weight:700;padding:12px 22px;border-radius:999px;
+    z-index:80;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:86vw;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  body:not(.portrait) #toast{bottom:34px;}
+
+  /* ---------- 全屏遮罩 ---------- */
+  .overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%,rgba(90,30,38,.55),rgba(28,10,14,.8));
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);padding:16px;}
+  .overlay.hidden{display:none;}
+  .card{background:linear-gradient(180deg,#fffaf0,#f8e8d0);border:3px solid #d9b36a;border-radius:28px;
+    padding:26px 28px;max-width:560px;width:min(92vw,560px);text-align:center;
+    box-shadow:0 24px 60px rgba(20,5,8,.5);}
+  .card h1{font-family:"STKaiti","KaiTi","Kaiti SC",serif;font-size:46px;margin:0 0 6px;color:#7c1f2d;letter-spacing:3px;}
+  .card h2{font-size:25px;color:#7c1f2d;margin:8px 0 6px;}
+  .sub{margin:0 0 16px;color:#9c6a3e;font-size:19px;letter-spacing:1px;}
+  .rule{font-size:18px;color:#5c3a22;margin:10px 0;line-height:1.6;}
+  .rule.small{font-size:16px;color:#a05a33;background:#ffeccf;display:inline-block;padding:7px 16px;border-radius:999px;}
+  .primary{min-width:230px;height:66px;border-radius:20px;border:2px solid #e6c47a;font-size:26px;font-weight:900;
+    background:linear-gradient(180deg,#b03040,#7c1622);color:#ffe9c2;font-family:inherit;cursor:pointer;
+    box-shadow:0 8px 20px rgba(120,20,30,.35);margin-top:14px;letter-spacing:2px;}
+  .primary:active{transform:scale(.97);}
+  .tiny{font-size:13px;color:#a08a74;margin:14px 0 0;line-height:1.5;}
+  .moon{font-size:56px;line-height:1;margin-top:4px;}
+  .countdown{font-size:52px;font-weight:900;color:#8f2233;letter-spacing:2px;font-variant-numeric:tabular-nums;
+    font-family:"SF Mono",Menlo,monospace;margin:6px 0 4px;}
+  #photoModal .card{max-width:min(86vw,720px);padding:16px;}
+  #photoImg{max-width:100%;max-height:64vh;border-radius:14px;border:2px solid #d9b36a;display:block;margin:0 auto;
+    -webkit-user-select:auto;user-select:auto;-webkit-touch-callout:default;}
+  #photoModal .primary{min-width:180px;height:54px;font-size:21px;margin-top:12px;}
+  #zenExit{position:fixed;right:16px;top:16px;z-index:40;display:none;}
+  body.zen #hud,body.zen #panel,body.zen #toast{display:none;}
+  body.zen #zenExit{display:block;}
+  #zenExit button{height:50px;padding:0 22px;border-radius:15px;border:2px solid rgba(198,150,76,.7);
+    background:rgba(255,248,235,.95);color:#7c1f2d;font-size:18px;font-weight:800;font-family:inherit;}
+  noscript{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99;
+    background:#fff8ec;color:#7c1f2d;font-size:22px;padding:24px;text-align:center;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene"></canvas>
+  <canvas id="makeup"></canvas>
+</div>
+
+<div id="hud">
+  <div id="brand">小棠的梳妆台 <span>· 古风闺房</span></div>
+  <div id="hudRight">
+    <button class="hudbtn" id="btnZen" title="全屏欣赏">欣赏</button>
+    <button class="hudbtn" id="btnMute" title="声音开关">🔊</button>
+  </div>
+</div>
+
+<div id="panel">
+  <div id="tabs">
+    <button class="tab active" data-tab="makeup">化妆</button>
+    <button class="tab" data-tab="dress">衣橱</button>
+    <button class="tab" data-tab="photo">拍照</button>
+  </div>
+  <div id="tabMakeup" class="tabpane">
+    <div id="tools"></div>
+    <div class="section-title" id="paletteTitle">口红颜色</div>
+    <div id="palette"></div>
+    <div class="actions">
+      <button id="btnUndo">↩ 撤销</button>
+      <button id="btnClear">🧼 卸妆</button>
+    </div>
+  </div>
+  <div id="tabDress" class="tabpane hidden">
+    <div id="dressTabs"></div>
+    <div id="dressList"></div>
+  </div>
+  <div id="tabPhoto" class="tabpane hidden">
+    <button id="btnPhoto">📸 拍下我的作品</button>
+    <p class="hint">拍好以后，长按照片就能保存到相册，也可以拿给爸爸妈妈看。</p>
+  </div>
+</div>
+
+<div id="zenExit"><button id="btnZenExit">继续玩</button></div>
+
+<div id="startOverlay" class="overlay">
+  <div class="card">
+    <h1>小棠的梳妆台</h1>
+    <p class="sub">古风闺房 · 化妆换装</p>
+    <div class="rule">选一个妆品，在小棠脸上点一点、涂一涂<br>头发、衣服、首饰都可以换</div>
+    <div class="rule small">每次玩 20 分钟，就要休息 1 小时哦</div>
+    <button class="primary" id="btnStart">开始化妆</button>
+    <p class="tiny">无广告 · 无联网 · 无充值 · 作品只存在这台设备上</p>
+  </div>
+</div>
+
+<div id="lockOverlay" class="overlay hidden">
+  <div class="card">
+    <div class="moon">🌙</div>
+    <h2>时间到啦，眼睛要休息一下</h2>
+    <p class="tiny" style="margin:12px 0 2px;font-size:15px;">下次可以玩的时间</p>
+    <div class="countdown" id="lockCountdown">59:59</div>
+    <p class="tiny">休息 1 小时后自动解锁<br>本游戏无广告 · 无联网 · 无充值</p>
+  </div>
+</div>
+
+<div id="photoModal" class="overlay hidden">
+  <div class="card">
+    <img id="photoImg" alt="我的作品">
+    <p class="tiny">长按照片可以保存到相册</p>
+    <button class="primary" id="btnPhotoClose">继续玩</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<noscript>请开启 JavaScript 才能玩哦～<br>如果这是微信或「文件」的预览页，请点右上角「…」→「用其他应用打开」→ 选择 Safari / Chrome / Edge 等浏览器。</noscript>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============================================================
+     1. 基础工具
+     ============================================================ */
+  const $ = (id) => document.getElementById(id);
+  const scene = $('scene');
+  const makeup = $('makeup');
+  const sctx = scene.getContext('2d');
+  const mctx = makeup.getContext('2d');
+  const panel = $('panel');
+  const toastEl = $('toast');
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const now = () => Date.now();
+
+  const store = {
+    get(k, def) {
+      try { const v = localStorage.getItem(k); return v === null ? def : v; }
+      catch (e) { return def; }
+    },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+
+  /* ============================================================
+     2. 游戏状态
+     ============================================================ */
+  const HAIRS = [
+    { a: '#2b1b1d', b: '#120b0d' },
+    { a: '#4b2f26', b: '#2a1814' },
+    { a: '#633d2b', b: '#38221a' }
+  ];
+  const OUTFITS = [
+    { name: '红金汉服', main: '#a92333', sub: '#7c1622', trim: '#e0b56a', inner: '#fbeee0', pattern: '#f0cf94' },
+    { name: '月白汉服', main: '#e7eff5', sub: '#b9cdd9', trim: '#6c93a5', inner: '#fdf8ee', pattern: '#8fb4c4' },
+    { name: '黛青汉服', main: '#3e6b5f', sub: '#27493f', trim: '#cfa96a', inner: '#eff3e7', pattern: '#d9b877' },
+    { name: '粉紫仙裙', main: '#e7c3da', sub: '#bd93c7', trim: '#e9cf94', inner: '#fdf4f8', pattern: '#f4dfaf' }
+  ];
+  const SKIN = { light: '#ffe6d5', mid: '#f6cbb4', dark: '#e3a98f', line: '#c98b78' };
+
+  const state = {
+    hairStyle: 0,
+    hairColor: 0,
+    outfit: 0,
+    accessory: 0,           // 0 无 / 1 步摇 / 2 发簪
+    tool: 'lipstick',
+    color: '#c62828',
+    strokes: [],
+    stickers: []
+  };
+
+  const LAYOUT = { k: 1, ox: 0, oy: 0, W: 0, H: 0, DPR: 1, areaW: 0, areaH: 0 };
+
+  /* ============================================================
+     3. 妆容工具定义
+     ============================================================ */
+  const TOOLS = {
+    lipstick: { name: '口红', icon: '💄', size: 15, alpha: 0.92, soft: false,
+      colors: ['#c62828', '#e53935', '#ff6f91', '#d81b60', '#9b1b30', '#b03a48', '#f06292', '#ff8a80', '#7b1a2a', '#e0526b'] },
+    eyeshadow: { name: '眼影', icon: '🌸', size: 26, alpha: 0.5, soft: true,
+      colors: ['#e8a0b0', '#c58bd6', '#e6c46a', '#a8c5c8', '#f2b5a0', '#8fa8d8', '#d98cc7', '#b48a5a', '#f6d1c1', '#9b7fc4'] },
+    blush: { name: '腮红', icon: '🍑', size: 36, alpha: 0.4, soft: true,
+      colors: ['#f7a8b8', '#f28a9a', '#ffb3a7', '#e79bb0', '#f6c1bd', '#f09a9a', '#f7b267', '#e88a8a'] },
+    brow: { name: '眉毛', icon: '🖌️', size: 9, alpha: 0.9, soft: false,
+      colors: ['#3a2420', '#5a3a2a', '#7a5238', '#9a7250', '#c9a48a'] },
+    liner: { name: '眼线', icon: '✏️', size: 4, alpha: 0.95, soft: false,
+      colors: ['#241416', '#4a2c24', '#6b4436', '#8a5a40', '#b0743b'] },
+    huadian: { name: '花钿', icon: '❀', size: 0, alpha: 1, soft: false, stamp: true,
+      colors: ['#c62828', '#d4af37', '#e91e63', '#ff7043', '#8e24aa', '#e0b56a'] }
+  };
+  const TOOL_ORDER = ['lipstick', 'eyeshadow', 'blush', 'brow', 'liner', 'huadian'];
+
+  /* ============================================================
+     4. 画布布局
+     ============================================================ */
+  function applyTransform(ctx) {
+    ctx.setTransform(LAYOUT.DPR, 0, 0, LAYOUT.DPR, 0, 0);
+    ctx.translate(LAYOUT.ox, LAYOUT.oy);
+    ctx.scale(LAYOUT.k, LAYOUT.k);
+  }
+
+  function layout() {
+    LAYOUT.W = window.innerWidth;
+    LAYOUT.H = window.innerHeight;
+    LAYOUT.DPR = clamp(window.devicePixelRatio || 1, 1, 2);
+    const portrait = LAYOUT.W < LAYOUT.H * 1.06;
+    document.body.classList.toggle('portrait', portrait);
+
+    const r = panel.getBoundingClientRect();
+    const areaW = portrait ? LAYOUT.W : Math.max(220, r.left - 6);
+    const areaH = portrait ? Math.max(220, r.top - 6) : LAYOUT.H;
+    const k = Math.min(areaW / 780, areaH / 960) * 0.99;
+    LAYOUT.k = k;
+    LAYOUT.areaW = areaW;
+    LAYOUT.areaH = areaH;
+    LAYOUT.ox = areaW / 2 - 320 * k;
+    LAYOUT.oy = areaH / 2 - 450 * k + (portrait ? 0 : 8);
+
+    for (const cv of [scene, makeup]) {
+      cv.width = Math.round(LAYOUT.W * LAYOUT.DPR);
+      cv.height = Math.round(LAYOUT.H * LAYOUT.DPR);
+      cv.style.width = LAYOUT.W + 'px';
+      cv.style.height = LAYOUT.H + 'px';
+    }
+    render();
+  }
+
+  /* ============================================================
+     5. 背景：古风闺房
+     ============================================================ */
+  function lg(ctx, x0, y0, x1, y1, stops) {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    for (const s of stops) g.addColorStop(s[0], s[1]);
+    return g;
+  }
+  function rg(ctx, x, y, r0, r1, stops) {
+    const g = ctx.createRadialGradient(x, y, r0, x, y, r1);
+    for (const s of stops) g.addColorStop(s[0], s[1]);
+    return g;
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function drawCloud(ctx, x, y, s) {
+    ctx.beginPath();
+    ctx.moveTo(x - s, y);
+    ctx.bezierCurveTo(x - s * .9, y - s * .55, x - s * .2, y - s * .55, x, y - s * .1);
+    ctx.bezierCurveTo(x + s * .15, y - s * .7, x + s * .95, y - s * .6, x + s, y);
+    ctx.stroke();
+  }
+
+  function drawWindow(ctx, x, y, w, h) {
+    ctx.save();
+    // 夜空
+    const arch = () => {
+      ctx.beginPath();
+      ctx.moveTo(x, y + h);
+      ctx.lineTo(x, y + w * 0.5);
+      ctx.arc(x + w / 2, y + w * 0.5, w / 2, Math.PI, 0);
+      ctx.lineTo(x + w, y + h);
+      ctx.closePath();
+    };
+    ctx.save();
+    arch();
+    ctx.clip();
+    ctx.fillStyle = lg(ctx, x, y, x, y + h, [[0, '#35406b'], [0.6, '#4b4e79'], [1, '#6b5a78']]);
+    ctx.fillRect(x, y, w, h);
+    // 月亮
+    ctx.fillStyle = 'rgba(255,240,205,.92)';
+    ctx.beginPath();
+    ctx.arc(x + w * .62, y + w * .42, w * .13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,205,.13)';
+    ctx.beginPath();
+    ctx.arc(x + w * .62, y + w * .42, w * .26, 0, Math.PI * 2);
+    ctx.fill();
+    // 窗外花枝
+    ctx.strokeStyle = '#3a2a2a';
+    ctx.lineWidth = Math.max(2, w * .012);
+    ctx.beginPath();
+    ctx.moveTo(x - w * .1, y + h * .78);
+    ctx.bezierCurveTo(x + w * .2, y + h * .55, x + w * .3, y + h * .35, x + w * .55, y + h * .3);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,190,205,.85)';
+    for (let i = 0; i < 7; i++) {
+      const px = x + w * (0.12 + i * 0.09), py = y + h * (0.62 - i * 0.055);
+      ctx.beginPath(); ctx.arc(px, py, w * .025, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+    // 窗棂
+    ctx.strokeStyle = 'rgba(201,163,106,.9)';
+    ctx.lineWidth = Math.max(2, w * .014);
+    arch(); ctx.stroke();
+    ctx.beginPath();
+    for (let i = 1; i < 4; i++) {
+      ctx.moveTo(x + w * i / 4, y + w * .5 - Math.sqrt(Math.max(0, (w / 2) ** 2 - (w * i / 4 - w / 2) ** 2)));
+      ctx.lineTo(x + w * i / 4, y + h);
+      ctx.moveTo(x, y + w * .5 + (h - w * .5) * i / 4);
+      ctx.lineTo(x + w, y + w * .5 + (h - w * .5) * i / 4);
+    }
+    ctx.stroke();
+    // 窗框
+    ctx.strokeStyle = '#8d5a34';
+    ctx.lineWidth = Math.max(4, w * .03);
+    arch(); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawScreen(ctx) {
+    const cx = LAYOUT.ox + 320 * LAYOUT.k;
+    const top = LAYOUT.oy + 40 * LAYOUT.k;
+    const bottom = LAYOUT.oy + 900 * LAYOUT.k;
+    const panelW = 210 * LAYOUT.k;
+    const gap = 16 * LAYOUT.k;
+    const totalW = panelW * 3 + gap * 2;
+    const left = cx - totalW / 2;
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const x = left + i * (panelW + gap);
+      ctx.fillStyle = 'rgba(255,247,230,0.92)';
+      ctx.strokeStyle = '#b98a3f';
+      ctx.lineWidth = Math.max(2, 4 * LAYOUT.k);
+      roundRect(ctx, x, top, panelW, bottom - top, 6 * LAYOUT.k);
+      ctx.fill(); ctx.stroke();
+      // 山水
+      ctx.save();
+      ctx.beginPath(); roundRect(ctx, x + 8 * LAYOUT.k, top + 8 * LAYOUT.k, panelW - 16 * LAYOUT.k, bottom - top - 16 * LAYOUT.k, 4 * LAYOUT.k); ctx.clip();
+      ctx.fillStyle = 'rgba(120,140,120,0.55)';
+      ctx.beginPath();
+      ctx.moveTo(x + panelW * .05, bottom - 60 * LAYOUT.k);
+      ctx.quadraticCurveTo(x + panelW * .3, bottom - 260 * LAYOUT.k, x + panelW * .5, bottom - 120 * LAYOUT.k);
+      ctx.quadraticCurveTo(x + panelW * .7, bottom - 320 * LAYOUT.k, x + panelW * .95, bottom - 90 * LAYOUT.k);
+      ctx.lineTo(x + panelW, bottom); ctx.lineTo(x, bottom); ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = 'rgba(80,100,90,0.4)';
+      ctx.beginPath();
+      ctx.moveTo(x, bottom - 30 * LAYOUT.k);
+      ctx.quadraticCurveTo(x + panelW * .4, bottom - 180 * LAYOUT.k, x + panelW, bottom - 40 * LAYOUT.k);
+      ctx.lineTo(x + panelW, bottom); ctx.lineTo(x, bottom); ctx.closePath();
+      ctx.fill();
+      // 红印
+      ctx.fillStyle = '#a92333';
+      ctx.fillRect(x + panelW - 34 * LAYOUT.k, top + 26 * LAYOUT.k, 16 * LAYOUT.k, 24 * LAYOUT.k);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawLantern(ctx, x, y, r) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(150,90,50,.8)';
+    ctx.lineWidth = Math.max(1.5, r * .05);
+    ctx.beginPath(); ctx.moveTo(x, y - r * 2.4); ctx.lineTo(x, y - r * 1.1); ctx.stroke();
+    // 灯光
+    ctx.fillStyle = rg(ctx, x, y, r * .2, r * 2.2, [[0, 'rgba(255,120,90,.35)'], [1, 'rgba(255,120,90,0)']]);
+    ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, Math.PI * 2); ctx.fill();
+    // 灯身
+    ctx.fillStyle = lg(ctx, x - r, y, x + r, y, [[0, '#a92333'], [0.5, '#e0453f'], [1, '#8f1c2a']]);
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,210,120,.75)';
+    ctx.lineWidth = Math.max(1, r * .04);
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.ellipse(x, y, Math.abs(r * i) / 3 + r * .06, r * 1.25, 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    // 上下盖
+    ctx.fillStyle = '#d9b36a';
+    ctx.fillRect(x - r * .45, y - r * 1.38, r * .9, r * .2);
+    ctx.fillRect(x - r * .45, y + r * 1.18, r * .9, r * .2);
+    // 流苏
+    ctx.strokeStyle = '#e0b56a';
+    ctx.beginPath(); ctx.moveTo(x, y + r * 1.38); ctx.lineTo(x, y + r * 1.9); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPetals(ctx) {
+    ctx.save();
+    for (let i = 0; i < 12; i++) {
+      const t = i / 12;
+      const x = LAYOUT.W * (0.06 + ((i * 0.13) % 0.88));
+      const y = LAYOUT.H * (0.18 + ((i * 0.37) % 0.7));
+      ctx.save(); ctx.translate(x, y); ctx.rotate(t * Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,170,185,' + (0.18 + (i % 3) * 0.06) + ')';
+      ctx.beginPath(); ctx.ellipse(0, 0, 7, 4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawRoom(ctx) {
+    const W = LAYOUT.W, H = LAYOUT.H;
+    ctx.setTransform(LAYOUT.DPR, 0, 0, LAYOUT.DPR, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    // 墙
+    ctx.fillStyle = lg(ctx, 0, 0, 0, H, [[0, '#fdf4e5'], [0.58, '#f7e5cd'], [0.59, '#eccfae'], [1, '#d9b18a']]);
+    ctx.fillRect(0, 0, W, H);
+    // 墙上暗纹
+    ctx.save();
+    ctx.strokeStyle = 'rgba(170,110,60,0.10)';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < 4; j++) {
+        drawCloud(ctx, W * 0.10 + j * W * 0.24 + (i % 2) * 26, H * 0.08 + i * H * 0.12, 26 + (i % 3) * 8);
+      }
+    }
+    ctx.restore();
+    // 窗
+    drawWindow(ctx, W * 0.045, H * 0.10, Math.min(W * 0.21, 290), Math.min(H * 0.52, 460));
+    // 屏风（人物身后）
+    drawScreen(ctx);
+    // 地板
+    ctx.fillStyle = lg(ctx, 0, H * 0.69, 0, H, [[0, '#c99a72'], [1, '#a9744f']]);
+    ctx.fillRect(0, H * 0.69, W, H * 0.31);
+    ctx.strokeStyle = 'rgba(90,50,25,0.15)';
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i < 8; i++) {
+      ctx.beginPath(); ctx.moveTo(W * i / 8, H * 0.69); ctx.lineTo(W * i / 8 - 40, H); ctx.stroke();
+    }
+    // 地毯
+    const cxp = LAYOUT.ox + 320 * LAYOUT.k;
+    const cyp = LAYOUT.oy + 862 * LAYOUT.k;
+    ctx.save();
+    ctx.translate(cxp, cyp);
+    ctx.scale(1, 0.26);
+    ctx.fillStyle = '#8f2b3a';
+    ctx.beginPath(); ctx.arc(0, 0, 330 * LAYOUT.k, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(224,181,106,.85)';
+    ctx.lineWidth = 8 * LAYOUT.k;
+    ctx.beginPath(); ctx.arc(0, 0, 300 * LAYOUT.k, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, 250 * LAYOUT.k, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // 灯笼
+    drawLantern(ctx, W * 0.10, H * 0.115, Math.max(20, H * 0.045));
+    drawLantern(ctx, W * 0.88, H * 0.10, Math.max(22, H * 0.05));
+    // 花瓣
+    drawPetals(ctx);
+  }
+
+  /* ============================================================
+     6. 人物绘制（局部坐标 640 x 900）
+     ============================================================ */
+  function drawBun(ctx, x, y, r, hair) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = lg(ctx, -r, -r, r, r, [[0, hair.a], [1, hair.b]]);
+    ctx.beginPath(); ctx.ellipse(0, 0, r, r * .86, -0.12, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,225,190,.14)';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.ellipse(-r * .12, -r * .05, r * (.72 - i * .16), r * (.6 - i * .14), -0.12, Math.PI * .15, Math.PI * 1.15); ctx.stroke();
+    }
+    ctx.strokeStyle = '#d9b36a';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.ellipse(0, r * .5, r * .72, r * .18, -0.12, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawHairBack(ctx, s) {
+    const hair = HAIRS[s.hairColor];
+    ctx.save();
+    ctx.fillStyle = lg(ctx, 170, 70, 480, 880, [[0, hair.a], [1, hair.b]]);
+    ctx.beginPath();
+    ctx.moveTo(320, 66);
+    ctx.bezierCurveTo(205, 72, 168, 168, 176, 300);
+    ctx.bezierCurveTo(158, 500, 140, 690, 158, 850);
+    ctx.bezierCurveTo(200, 888, 262, 872, 286, 850);
+    ctx.lineTo(354, 850);
+    ctx.bezierCurveTo(378, 872, 440, 888, 482, 850);
+    ctx.bezierCurveTo(500, 690, 482, 500, 464, 300);
+    ctx.bezierCurveTo(472, 168, 435, 72, 320, 66);
+    ctx.closePath();
+    ctx.fill();
+    if (s.hairStyle === 0) { drawBun(ctx, 246, 116, 47, hair); drawBun(ctx, 394, 116, 47, hair); }
+    if (s.hairStyle === 1) { drawBun(ctx, 320, 94, 55, hair); }
+    ctx.restore();
+  }
+
+  function drawBody(ctx, o, s) {
+    ctx.save();
+    // 长裙
+    ctx.fillStyle = lg(ctx, 240, 590, 380, 900, [[0, o.main], [1, o.sub]]);
+    ctx.beginPath();
+    ctx.moveTo(248, 592);
+    ctx.bezierCurveTo(232, 700, 200, 810, 168, 902);
+    ctx.lineTo(472, 902);
+    ctx.bezierCurveTo(440, 810, 408, 700, 392, 592);
+    ctx.closePath();
+    ctx.fill();
+    // 裙褶
+    ctx.strokeStyle = 'rgba(0,0,0,.12)';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 5; i++) {
+      const t = i / 4;
+      ctx.beginPath();
+      ctx.moveTo(258 + t * 124, 600);
+      ctx.quadraticCurveTo(250 + t * 150, 750, 220 + t * 190, 900);
+      ctx.stroke();
+    }
+    // 上襦
+    ctx.fillStyle = o.main;
+    ctx.beginPath();
+    ctx.moveTo(214, 452);
+    ctx.bezierCurveTo(280, 432, 360, 432, 426, 452);
+    ctx.bezierCurveTo(432, 520, 424, 570, 410, 606);
+    ctx.lineTo(230, 606);
+    ctx.bezierCurveTo(216, 570, 208, 520, 214, 452);
+    ctx.closePath();
+    ctx.fill();
+    // 内衬领
+    ctx.fillStyle = o.inner;
+    ctx.beginPath();
+    ctx.moveTo(284, 438);
+    ctx.lineTo(320, 556);
+    ctx.lineTo(356, 438);
+    ctx.lineTo(320, 470);
+    ctx.closePath();
+    ctx.fill();
+    // 交领
+    ctx.strokeStyle = o.trim;
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(288, 440); ctx.lineTo(318, 548);
+    ctx.moveTo(352, 440); ctx.lineTo(322, 548);
+    ctx.stroke();
+    // 腰带
+    ctx.fillStyle = o.trim;
+    roundRect(ctx, 232, 596, 176, 26, 10);
+    ctx.fill();
+    ctx.fillStyle = o.sub;
+    ctx.beginPath(); ctx.arc(320, 609, 11, 0, Math.PI * 2); ctx.fill();
+    // 腰带飘带
+    ctx.strokeStyle = o.trim;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(310, 618); ctx.quadraticCurveTo(290, 690, 300, 760);
+    ctx.moveTo(330, 618); ctx.quadraticCurveTo(352, 688, 344, 754);
+    ctx.stroke();
+    // 袖子
+    ctx.fillStyle = lg(ctx, 200, 470, 120, 750, [[0, o.main], [1, o.sub]]);
+    ctx.beginPath();
+    ctx.moveTo(222, 466);
+    ctx.bezierCurveTo(150, 500, 88, 590, 82, 690);
+    ctx.bezierCurveTo(80, 740, 108, 762, 146, 748);
+    ctx.bezierCurveTo(206, 716, 244, 650, 258, 596);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(418, 466);
+    ctx.bezierCurveTo(490, 500, 552, 590, 558, 690);
+    ctx.bezierCurveTo(560, 740, 532, 762, 494, 748);
+    ctx.bezierCurveTo(434, 716, 396, 650, 382, 596);
+    ctx.closePath();
+    ctx.fill();
+    // 袖口花边
+    ctx.strokeStyle = o.trim;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(86, 690); ctx.quadraticCurveTo(110, 748, 148, 742);
+    ctx.moveTo(554, 690); ctx.quadraticCurveTo(530, 748, 492, 742);
+    ctx.stroke();
+    // 花纹
+    ctx.save();
+    ctx.strokeStyle = o.pattern;
+    ctx.fillStyle = o.pattern;
+    ctx.lineWidth = 2.4;
+    ctx.globalAlpha = 0.55;
+    for (let i = 0; i < 3; i++) {
+      drawCloud(ctx, 300 + i * 20, 470 + i * 8, 12);
+    }
+    ctx.globalAlpha = 0.5;
+    for (let i = 0; i < 4; i++) {
+      const bx = 260 + (i % 2) * 120 + (i > 1 ? 10 : 0);
+      const by = 700 + Math.floor(i / 2) * 90;
+      ctx.beginPath();
+      for (let p = 0; p < 5; p++) {
+        const a = p / 5 * Math.PI * 2;
+        ctx.ellipse(bx + Math.cos(a) * 10, by + Math.sin(a) * 10, 8, 4, a, 0, Math.PI * 2);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function drawFaceBase(ctx) {
+    // 脖子
+    ctx.fillStyle = SKIN.mid;
+    roundRect(ctx, 294, 360, 52, 96, 22);
+    ctx.fill();
+    // 脖子阴影
+    ctx.fillStyle = 'rgba(180,110,90,.28)';
+    ctx.beginPath(); ctx.ellipse(320, 368, 40, 14, 0, 0, Math.PI * 2); ctx.fill();
+    // 耳朵
+    ctx.fillStyle = SKIN.mid;
+    ctx.beginPath(); ctx.ellipse(207, 300, 17, 27, -0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(433, 300, 17, 27, 0.1, 0, Math.PI * 2); ctx.fill();
+    // 脸
+    ctx.fillStyle = rg(ctx, 320, 220, 30, 150, [[0, SKIN.light], [0.72, SKIN.mid], [1, SKIN.dark]]);
+    ctx.beginPath(); ctx.ellipse(320, 250, 100, 132, 0, 0, Math.PI * 2); ctx.fill();
+    // 下巴高光
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath(); ctx.ellipse(320, 348, 44, 16, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawBrowBase(ctx, x, y, dir) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(dir, 1);
+    ctx.strokeStyle = '#b98d6f';
+    ctx.lineWidth = 5.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-36, 8);
+    ctx.quadraticCurveTo(0, -10, 38, 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawEye(ctx, cx, cy) {
+    ctx.save();
+    // 眼白
+    ctx.fillStyle = '#fffaf6';
+    ctx.beginPath();
+    ctx.moveTo(cx - 38, cy);
+    ctx.quadraticCurveTo(cx, cy - 26, cx + 38, cy);
+    ctx.quadraticCurveTo(cx, cy + 19, cx - 38, cy);
+    ctx.closePath();
+    ctx.fill();
+    // 虹膜
+    ctx.fillStyle = rg(ctx, cx - 2, cy - 4, 2, 15, [[0, '#9a6638'], [1, '#4a2a16']]);
+    ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#24140d';
+    ctx.beginPath(); ctx.arc(cx, cy + 1, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    ctx.beginPath(); ctx.arc(cx - 4, cy - 5, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.arc(cx + 4, cy + 5, 2, 0, Math.PI * 2); ctx.fill();
+    // 上眼线
+    ctx.strokeStyle = '#3a2420';
+    ctx.lineWidth = 3.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 41, cy + 1);
+    ctx.quadraticCurveTo(cx, cy - 30, cx + 41, cy + 1);
+    ctx.stroke();
+    // 眼尾睫毛
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(cx + 34, cy - 6); ctx.lineTo(cx + 46, cy - 14);
+    ctx.moveTo(cx + 37, cy - 2); ctx.lineTo(cx + 50, cy - 7);
+    ctx.stroke();
+    // 下眼睑
+    ctx.strokeStyle = 'rgba(150,95,80,.45)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - 30, cy + 13);
+    ctx.quadraticCurveTo(cx, cy + 22, cx + 30, cy + 13);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawNose(ctx) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(190,120,100,.5)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(316, 296);
+    ctx.quadraticCurveTo(310, 308, 316, 314);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawLipsBase(ctx) {
+    ctx.save();
+    ctx.fillStyle = '#e2a49c';
+    ctx.beginPath();
+    ctx.moveTo(288, 333);
+    ctx.quadraticCurveTo(304, 322, 320, 330);
+    ctx.quadraticCurveTo(336, 322, 352, 333);
+    ctx.quadraticCurveTo(338, 350, 320, 353);
+    ctx.quadraticCurveTo(302, 350, 288, 333);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(190,110,105,.5)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawHairFront(ctx, s) {
+    const hair = HAIRS[s.hairColor];
+    ctx.save();
+    ctx.fillStyle = lg(ctx, 210, 120, 430, 360, [[0, hair.a], [1, hair.b]]);
+    if (s.hairStyle === 2) {
+      // 披发：两侧长发披在身前
+      for (const sign of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(320 + sign * 6, 128);
+        ctx.bezierCurveTo(320 + sign * 118, 112, 320 + sign * 136, 250, 320 + sign * 128, 400);
+        ctx.bezierCurveTo(320 + sign * 120, 520, 320 + sign * 138, 640, 320 + sign * 146, 760);
+        ctx.bezierCurveTo(320 + sign * 100, 780, 320 + sign * 88, 720, 320 + sign * 82, 640);
+        ctx.bezierCurveTo(320 + sign * 66, 520, 320 + sign * 60, 400, 320 + sign * 74, 300);
+        ctx.bezierCurveTo(320 + sign * 84, 230, 320 + sign * 70, 160, 320 + sign * 6, 128);
+        ctx.closePath(); ctx.fill();
+      }
+    } else {
+      // 中分刘海 + 两侧鬓发
+      ctx.beginPath();
+      ctx.moveTo(320, 118);
+      ctx.bezierCurveTo(250, 118, 214, 158, 212, 232);
+      ctx.bezierCurveTo(240, 196, 280, 182, 320, 186);
+      ctx.bezierCurveTo(360, 182, 400, 196, 428, 232);
+      ctx.bezierCurveTo(426, 158, 390, 118, 320, 118);
+      ctx.closePath(); ctx.fill();
+      for (const sign of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(320 + sign * 96, 168);
+        ctx.bezierCurveTo(320 + sign * 128, 220, 320 + sign * 124, 320, 320 + sign * 108, 400);
+        ctx.bezierCurveTo(320 + sign * 96, 460, 320 + sign * 98, 520, 320 + sign * 92, 570);
+        ctx.bezierCurveTo(320 + sign * 70, 560, 320 + sign * 62, 500, 320 + sign * 64, 430);
+        ctx.bezierCurveTo(320 + sign * 66, 330, 320 + sign * 74, 240, 320 + sign * 96, 168);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    // 发丝高光
+    ctx.strokeStyle = 'rgba(255,225,190,.13)';
+    ctx.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(250 + i * 18, 170);
+      ctx.quadraticCurveTo(320, 140, 392 - i * 16, 176);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawEarrings(ctx) {
+    ctx.save();
+    ctx.fillStyle = '#e0b56a';
+    for (const x of [204, 436]) {
+      ctx.beginPath(); ctx.arc(x, 330, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#d9b36a';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, 336); ctx.lineTo(x, 352); ctx.stroke();
+      ctx.fillStyle = '#b03040';
+      ctx.beginPath(); ctx.arc(x, 358, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#e0b56a';
+      ctx.beginPath(); ctx.arc(x, 368, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawAccessory(ctx, s) {
+    if (s.accessory === 0) return;
+    ctx.save();
+    const bunX = s.hairStyle === 2 ? 430 : 396;
+    const bunY = s.hairStyle === 2 ? 220 : 118;
+    if (s.accessory === 1) {
+      // 步摇
+      ctx.strokeStyle = '#e0b56a';
+      ctx.lineWidth = 4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(bunX - 30, bunY + 20); ctx.lineTo(bunX + 34, bunY - 20); ctx.stroke();
+      ctx.fillStyle = '#d4af37';
+      for (let i = 0; i < 5; i++) {
+        const a = i / 5 * Math.PI * 2;
+        ctx.beginPath(); ctx.ellipse(bunX + 34 + Math.cos(a) * 9, bunY - 20 + Math.sin(a) * 9, 7, 4, a, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#b03040';
+      ctx.beginPath(); ctx.arc(bunX + 34, bunY - 20, 5, 0, Math.PI * 2); ctx.fill();
+      // 流苏
+      ctx.strokeStyle = '#e0b56a'; ctx.lineWidth = 2;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(bunX + 34 + (i - 1) * 6, bunY - 12);
+        ctx.quadraticCurveTo(bunX + 34 + (i - 1) * 12, bunY + 40, bunX + 30 + (i - 1) * 14, bunY + 78);
+        ctx.stroke();
+        ctx.fillStyle = i === 1 ? '#b03040' : '#d4af37';
+        ctx.beginPath(); ctx.arc(bunX + 30 + (i - 1) * 14, bunY + 80, 4, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      // 发簪
+      ctx.strokeStyle = '#d4af37';
+      ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(244, 96); ctx.lineTo(298, 138); ctx.stroke();
+      ctx.fillStyle = '#7fb7a3';
+      ctx.beginPath(); ctx.ellipse(244, 94, 10, 6, -0.6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#b03040';
+      ctx.beginPath(); ctx.arc(298, 138, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawGirl(ctx, s) {
+    drawHairBack(ctx, s);
+    drawBody(ctx, OUTFITS[s.outfit], s);
+    drawFaceBase(ctx);
+    // 五官底妆
+    drawBrowBase(ctx, 262, 222, 1);
+    drawBrowBase(ctx, 378, 222, -1);
+    drawEye(ctx, 263, 266);
+    drawEye(ctx, 377, 266);
+    drawNose(ctx);
+    drawLipsBase(ctx);
+    drawHairFront(ctx, s);
+    drawEarrings(ctx);
+    drawAccessory(ctx, s);
+  }
+
+  function render() {
+    drawRoom(sctx);
+    sctx.save();
+    applyTransform(sctx);
+    drawGirl(sctx, state);
+    sctx.restore();
+    redrawMakeup();
+  }
+
+  /* ============================================================
+     7. 妆容绘制
+     ============================================================ */
+  function lipPath() {
+    const p = new Path2D();
+    p.moveTo(278, 336);
+    p.bezierCurveTo(292, 322, 306, 326, 320, 332);
+    p.bezierCurveTo(334, 326, 348, 322, 362, 336);
+    p.bezierCurveTo(346, 354, 333, 358, 320, 358);
+    p.bezierCurveTo(307, 358, 294, 354, 278, 336);
+    p.closePath();
+    return p;
+  }
+  function ellipsePath(cx, cy, rx, ry, rot) {
+    const p = new Path2D();
+    p.ellipse(cx, cy, rx, ry, rot || 0, 0, Math.PI * 2);
+    return p;
+  }
+  function clipPathFor(tool) {
+    switch (tool) {
+      case 'lipstick': return lipPath();
+      case 'eyeshadow': {
+        const p = new Path2D();
+        p.ellipse(263, 250, 52, 28, 0, 0, Math.PI * 2);
+        p.ellipse(377, 250, 52, 28, 0, 0, Math.PI * 2);
+        return p;
+      }
+      case 'blush': {
+        const p = new Path2D();
+        p.ellipse(220, 326, 54, 38, -0.15, 0, Math.PI * 2);
+        p.ellipse(420, 326, 54, 38, 0.15, 0, Math.PI * 2);
+        return p;
+      }
+      case 'brow': {
+        const p = new Path2D();
+        p.ellipse(262, 222, 52, 20, -0.12, 0, Math.PI * 2);
+        p.ellipse(378, 222, 52, 20, 0.12, 0, Math.PI * 2);
+        return p;
+      }
+      case 'liner': {
+        const p = new Path2D();
+        p.ellipse(263, 266, 46, 24, 0, 0, Math.PI * 2);
+        p.ellipse(377, 266, 46, 24, 0, 0, Math.PI * 2);
+        return p;
+      }
+      case 'huadian': return ellipsePath(320, 250, 108, 140, 0);
+      default: return ellipsePath(320, 250, 108, 140, 0);
+    }
+  }
+  function inEllipse(x, y, cx, cy, rx, ry, rot) {
+    const c = Math.cos(-(rot || 0)), sn = Math.sin(-(rot || 0));
+    const dx = x - cx, dy = y - cy;
+    const nx = dx * c - dy * sn, ny = dx * sn + dy * c;
+    return (nx * nx) / (rx * rx) + (ny * ny) / (ry * ry) <= 1;
+  }
+  function inRegion(tool, x, y) {
+    switch (tool) {
+      case 'lipstick': return inEllipse(x, y, 320, 340, 46, 22, 0);
+      case 'eyeshadow': return inEllipse(x, y, 263, 250, 56, 32, 0) || inEllipse(x, y, 377, 250, 56, 32, 0);
+      case 'blush': return inEllipse(x, y, 220, 326, 58, 42, -0.15) || inEllipse(x, y, 420, 326, 58, 42, 0.15);
+      case 'brow': return inEllipse(x, y, 262, 222, 56, 25, -0.12) || inEllipse(x, y, 378, 222, 56, 25, 0.12);
+      case 'liner': return inEllipse(x, y, 263, 266, 50, 28, 0) || inEllipse(x, y, 377, 266, 50, 28, 0);
+      case 'huadian': return inEllipse(x, y, 320, 250, 108, 140, 0);
+      default: return false;
+    }
+  }
+  function huadianStamp(ctx, x, y, color) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.95;
+    for (let i = 0; i < 6; i++) {
+      ctx.save();
+      ctx.rotate(i / 6 * Math.PI * 2);
+      ctx.beginPath();
+      ctx.ellipse(0, -9, 5, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#f0d58a';
+    ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function drawStroke(ctx, st) {
+    applyTransform(ctx);
+    ctx.save();
+    ctx.clip(clipPathFor(st.tool));
+    ctx.globalAlpha = st.alpha;
+    if (st.soft) {
+      for (let i = 0; i < st.pts.length; i++) {
+        const p = st.pts[i];
+        const g = ctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, st.size * 1.15);
+        g.addColorStop(0, st.color);
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(p.x, p.y, st.size * 1.15, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.strokeStyle = st.color;
+      ctx.lineWidth = st.size;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(st.pts[0].x, st.pts[0].y);
+      for (let i = 1; i < st.pts.length; i++) ctx.lineTo(st.pts[i].x, st.pts[i].y);
+      if (st.pts.length === 1) ctx.lineTo(st.pts[0].x + 0.1, st.pts[0].y + 0.1);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function redrawMakeup() {
+    mctx.setTransform(LAYOUT.DPR, 0, 0, LAYOUT.DPR, 0, 0);
+    mctx.clearRect(0, 0, LAYOUT.W, LAYOUT.H);
+    for (const st of state.strokes) drawStroke(mctx, st);
+    for (const sp of state.stickers) {
+      applyTransform(mctx);
+      huadianStamp(mctx, sp.x, sp.y, sp.color);
+    }
+  }
+
+  let curStroke = null;
+  let lastToastPaint = 0;
+
+  function toLocal(clientX, clientY) {
+    const r = makeup.getBoundingClientRect();
+    return {
+      x: (clientX - r.left - LAYOUT.ox) / LAYOUT.k,
+      y: (clientY - r.top - LAYOUT.oy) / LAYOUT.k
+    };
+  }
+
+  function paintStart(p) {
+    const tool = state.tool;
+    if (tool === 'huadian') {
+      if (!inRegion('huadian', p.x, p.y)) return;
+      state.stickers.push({ x: p.x, y: p.y, color: state.color });
+      redrawMakeup();
+      sndSwatch();
+      return;
+    }
+    if (!inRegion(tool, p.x, p.y)) {
+      if (now() - lastToastPaint > 4000) {
+        lastToastPaint = now();
+        toast(toolHint(tool));
+      }
+      return;
+    }
+    const cfg = TOOLS[tool];
+    curStroke = { tool, color: state.color, size: cfg.size, alpha: cfg.alpha, soft: !!cfg.soft, pts: [{ x: p.x, y: p.y }] };
+    state.strokes.push(curStroke);
+    drawStroke(mctx, curStroke);
+    sndPaint();
+  }
+  function paintMove(p) {
+    if (!curStroke) return;
+    const last = curStroke.pts[curStroke.pts.length - 1];
+    if (Math.hypot(p.x - last.x, p.y - last.y) < 1.2) return;
+    curStroke.pts.push({ x: p.x, y: p.y });
+    // 增量绘制最后一段
+    applyTransform(mctx);
+    mctx.save();
+    mctx.clip(clipPathFor(curStroke.tool));
+    mctx.globalAlpha = curStroke.alpha;
+    if (curStroke.soft) {
+      const g = mctx.createRadialGradient(p.x, p.y, 1, p.x, p.y, curStroke.size * 1.15);
+      g.addColorStop(0, curStroke.color);
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      mctx.fillStyle = g;
+      mctx.beginPath(); mctx.arc(p.x, p.y, curStroke.size * 1.15, 0, Math.PI * 2); mctx.fill();
+    } else {
+      mctx.strokeStyle = curStroke.color;
+      mctx.lineWidth = curStroke.size;
+      mctx.lineCap = 'round';
+      mctx.lineJoin = 'round';
+      mctx.beginPath(); mctx.moveTo(last.x, last.y); mctx.lineTo(p.x, p.y); mctx.stroke();
+    }
+    mctx.restore();
+  }
+  function paintEnd() { curStroke = null; }
+
+  function toolHint(tool) {
+    const cfg = TOOLS[tool];
+    return '在小棠的' + cfg.name + '位置点一点、涂一涂哦～';
+  }
+
+  function attachPaintEvents() {
+    makeup.addEventListener('pointerdown', (e) => {
+      if (!game.playable()) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      e.preventDefault();
+      try { makeup.setPointerCapture(e.pointerId); } catch (err) {}
+      const p = toLocal(e.clientX, e.clientY);
+      paintStart(p);
+    });
+    makeup.addEventListener('pointermove', (e) => {
+      if (!curStroke) return;
+      e.preventDefault();
+      paintMove(toLocal(e.clientX, e.clientY));
+    });
+    makeup.addEventListener('pointerup', (e) => { paintEnd(); });
+    makeup.addEventListener('pointercancel', () => { paintEnd(); });
+    makeup.addEventListener('pointerleave', () => { paintEnd(); });
+  }
+
+  /* ============================================================
+     8. 音效
+     ============================================================ */
+  let actx = null;
+  let muted = store.get('xt_muted', '0') === '1';
+
+  function ensureAudio() {
+    if (!actx) {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) actx = new AC();
+      } catch (e) { actx = null; }
+    }
+    if (actx && actx.state === 'suspended') { actx.resume().catch(function(){}); }
+  }
+  function tone(freq, dur, type, vol, delay) {
+    if (muted || !actx) return;
+    try {
+      const t = actx.currentTime + (delay || 0);
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.type = type || 'sine';
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.04, t + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.08));
+      o.connect(g); g.connect(actx.destination);
+      o.start(t); o.stop(t + (dur || 0.08) + 0.03);
+    } catch (e) {}
+  }
+  const sndTap = () => tone(720, 0.05, 'sine', 0.035);
+  const sndSwatch = () => tone(880, 0.07, 'triangle', 0.03);
+  const sndPaint = () => tone(520 + Math.random() * 120, 0.035, 'sine', 0.015);
+  const sndDress = () => { tone(660, 0.07, 'sine', 0.03); tone(990, 0.09, 'sine', 0.03, 0.05); };
+  const sndUndo = () => tone(420, 0.08, 'sine', 0.03);
+  const sndPhoto = () => { tone(880, 0.08, 'sine', 0.04); tone(1320, 0.12, 'sine', 0.04, 0.08); };
+  const sndLock = () => { tone(520, 0.25, 'sine', 0.04); tone(392, 0.3, 'sine', 0.04, 0.2); tone(262, 0.5, 'sine', 0.04, 0.45); };
+
+  /* ============================================================
+     9. UI 渲染
+     ============================================================ */
+  const toolEl = $('tools');
+  const paletteEl = $('palette');
+  const paletteTitle = $('paletteTitle');
+
+  TOOL_ORDER.forEach((id) => {
+    const b = document.createElement('button');
+    b.className = 'tool' + (id === state.tool ? ' active' : '');
+    b.dataset.tool = id;
+    b.innerHTML = TOOLS[id].icon + ' ' + TOOLS[id].name;
+    b.addEventListener('click', () => {
+      state.tool = id;
+      state.color = TOOLS[id].colors[0];
+      document.querySelectorAll('.tool').forEach((x) => x.classList.toggle('active', x.dataset.tool === id));
+      renderPalette();
+      sndTap();
+    });
+    toolEl.appendChild(b);
+  });
+
+  function renderPalette() {
+    const cfg = TOOLS[state.tool];
+    paletteTitle.textContent = cfg.name + '颜色';
+    paletteEl.innerHTML = '';
+    cfg.colors.forEach((color) => {
+      const d = document.createElement('div');
+      d.className = 'sw' + (color === state.color ? ' active' : '');
+      d.style.background = color;
+      d.addEventListener('click', () => {
+        state.color = color;
+        renderPalette();
+        sndSwatch();
+      });
+      paletteEl.appendChild(d);
+    });
+  }
+
+  const dressTabsEl = $('dressTabs');
+  const dressListEl = $('dressList');
+  const DRESS = [
+    { key: 'hairStyle', name: '发型', opts: [{ v: 0, label: '双环望仙髻' }, { v: 1, label: '单高髻' }, { v: 2, label: '披发' }] },
+    { key: 'hairColor', name: '发色', opts: [{ v: 0, label: '墨黑', c: '#2b1b1d' }, { v: 1, label: '深棕', c: '#4b2f26' }, { v: 2, label: '栗色', c: '#633d2b' }] },
+    { key: 'outfit', name: '衣服', opts: [{ v: 0, label: '红金汉服', c: '#a92333', c2: '#e0b56a' }, { v: 1, label: '月白汉服', c: '#e7eff5', c2: '#6c93a5' }, { v: 2, label: '黛青汉服', c: '#3e6b5f', c2: '#cfa96a' }, { v: 3, label: '粉紫仙裙', c: '#e7c3da', c2: '#e9cf94' }] },
+    { key: 'accessory', name: '首饰', opts: [{ v: 0, label: '不戴' }, { v: 1, label: '步摇' }, { v: 2, label: '发簪' }] }
+  ];
+  let dressIdx = 0;
+  function renderDressTabs() {
+    dressTabsEl.innerHTML = '';
+    DRESS.forEach((d, i) => {
+      const b = document.createElement('button');
+      b.textContent = d.name;
+      if (i === dressIdx) b.classList.add('active');
+      b.addEventListener('click', () => { dressIdx = i; renderDressTabs(); renderDressList(); sndTap(); });
+      dressTabsEl.appendChild(b);
+    });
+  }
+  function renderDressList() {
+    const d = DRESS[dressIdx];
+    dressListEl.innerHTML = '';
+    d.opts.forEach((o) => {
+      const cur = state[d.key] === o.v;
+      const el = document.createElement('div');
+      el.className = 'opt' + (cur ? ' active' : '');
+      let dot = '<div class="dot" style="background:';
+      if (o.c && o.c2) dot += 'linear-gradient(135deg,' + o.c + ' 55%,' + o.c2 + ' 55%)';
+      else if (o.c) dot += o.c;
+      else dot += '#d9b36a';
+      dot += '"></div>';
+      el.innerHTML = dot + '<div class="lbl">' + o.label + '</div>';
+      el.addEventListener('click', () => {
+        state[d.key] = o.v;
+        renderDressList();
+        render();
+        sndDress();
+      });
+      dressListEl.appendChild(el);
+    });
+  }
+
+  // Tab 切换
+  document.querySelectorAll('#tabs .tab').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('#tabs .tab').forEach((x) => x.classList.toggle('active', x === b));
+      const map = { makeup: 'tabMakeup', dress: 'tabDress', photo: 'tabPhoto' };
+      ['tabMakeup', 'tabDress', 'tabPhoto'].forEach((id) => $(id).classList.toggle('hidden', id !== map[b.dataset.tab]));
+      sndTap();
+    });
+  });
+
+  $('btnUndo').addEventListener('click', () => {
+    if (state.strokes.length) state.strokes.pop();
+    else if (state.stickers.length) state.stickers.pop();
+    redrawMakeup();
+    sndUndo();
+  });
+  $('btnClear').addEventListener('click', () => {
+    state.strokes = [];
+    state.stickers = [];
+    redrawMakeup();
+    sndUndo();
+    toast('妆卸干净啦，重新开始吧～');
+  });
+
+  // 欣赏模式
+  $('btnZen').addEventListener('click', () => {
+    document.body.classList.add('zen');
+    sndTap();
+  });
+  $('btnZenExit').addEventListener('click', () => {
+    document.body.classList.remove('zen');
+    sndTap();
+  });
+
+  // 声音
+  function renderMute() { $('btnMute').textContent = muted ? '🔇' : '🔊'; }
+  $('btnMute').addEventListener('click', () => {
+    muted = !muted;
+    store.set('xt_muted', muted ? '1' : '0');
+    renderMute();
+    if (!muted) { ensureAudio(); sndTap(); }
+  });
+
+  // 拍照
+  $('btnPhoto').addEventListener('click', () => {
+    ensureAudio();
+    const c = document.createElement('canvas');
+    c.width = scene.width;
+    c.height = scene.height;
+    const x = c.getContext('2d');
+    x.drawImage(scene, 0, 0);
+    x.drawImage(makeup, 0, 0);
+    // 水印
+    x.fillStyle = 'rgba(255,248,235,.92)';
+    x.font = '600 ' + Math.round(LOGO_FONT()) + 'px "STKaiti","KaiTi",serif';
+    x.textAlign = 'center';
+    x.fillText('小棠的梳妆台', c.width / 2, c.height - Math.round(18 * LAYOUT.DPR));
+    $('photoImg').src = c.toDataURL('image/png');
+    $('photoModal').classList.remove('hidden');
+    sndPhoto();
+  });
+  function LOGO_FONT() { return Math.max(16, Math.min(28, LAYOUT.W / 36)) * LAYOUT.DPR; }
+  $('btnPhotoClose').addEventListener('click', () => {
+    $('photoModal').classList.add('hidden');
+    sndTap();
+  });
+
+  function toast(msg, ms) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastEl._t);
+    toastEl._t = setTimeout(() => toastEl.classList.remove('show'), ms || 2600);
+  }
+
+  /* ============================================================
+     10. 20 分钟限制 + 1 小时休息
+     ============================================================ */
+  const PLAY_LIMIT = 20 * 60 * 1000;
+  const REST_TIME = 60 * 60 * 1000;
+  const game = {
+    playMs: parseInt(store.get('xt_play_ms', '0'), 10) || 0,
+    lockUntil: parseInt(store.get('xt_lock_until', '0'), 10) || 0,
+    locked: false,
+    started: false,
+    warned: false,
+    saveTick: 0
+  };
+  game.playable = function () {
+    return this.started && !this.locked && $('photoModal').classList.contains('hidden');
+  };
+
+  function fmtCountdown(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const s = total % 60;
+    return (h > 0 ? String(h) + ':' : '') + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  }
+
+  function savePlay() {
+    store.set('xt_play_ms', String(Math.round(game.playMs)));
+    store.set('xt_lock_until', String(game.lockUntil));
+  }
+
+  function showLock() {
+    $('lockOverlay').classList.remove('hidden');
+    $('startOverlay').classList.add('hidden');
+    $('lockCountdown').textContent = fmtCountdown(game.lockUntil - now());
+  }
+  function hideLock() {
+    $('lockOverlay').classList.add('hidden');
+  }
+
+  function lock() {
+    game.locked = true;
+    game.started = false;
+    game.lockUntil = now() + REST_TIME;
+    game.playMs = PLAY_LIMIT;
+    savePlay();
+    showLock();
+    sndLock();
+  }
+
+  function unlock() {
+    game.locked = false;
+    game.playMs = 0;
+    game.lockUntil = 0;
+    game.warned = false;
+    savePlay();
+    hideLock();
+    $('startOverlay').classList.remove('hidden');
+    toast('休息好啦，可以继续玩啦～');
+  }
+
+  function tick() {
+    const t = now();
+    if (game.locked) {
+      const left = game.lockUntil - t;
+      if (left <= 0) unlock();
+      else $('lockCountdown').textContent = fmtCountdown(left);
+      return;
+    }
+    if (!game.started || document.hidden) return;
+    game.playMs += 1000;
+    game.saveTick++;
+    if (game.saveTick >= 5) { game.saveTick = 0; savePlay(); }
+    if (game.playMs >= PLAY_LIMIT) {
+      lock();
+    } else if (game.playMs >= PLAY_LIMIT - 120000 && !game.warned) {
+      game.warned = true;
+      toast('再玩一小会儿，就要让眼睛休息啦～', 3200);
+    }
+  }
+
+  /* ============================================================
+     11. 启动 & 生命周期
+     ============================================================ */
+  function startGame() {
+    ensureAudio();
+    game.started = true;
+    $('startOverlay').classList.add('hidden');
+    sndTap();
+    toast('选一个颜色，在小棠脸上点一点吧～', 3200);
+  }
+
+  $('btnStart').addEventListener('click', startGame);
+
+  function boot() {
+    renderMute();
+    renderPalette();
+    renderDressTabs();
+    renderDressList();
+    layout();
+    attachPaintEvents();
+
+    const params = new URLSearchParams(location.search);
+    if (params.has('dev')) {
+      game.started = true;
+      $('startOverlay').classList.add('hidden');
+    }
+    if (game.lockUntil > now()) {
+      game.locked = true;
+      showLock();
+    } else if (game.lockUntil && game.lockUntil <= now()) {
+      game.playMs = 0;
+      game.lockUntil = 0;
+      savePlay();
+    }
+    if (game.playMs >= PLAY_LIMIT && !game.locked) {
+      // 上次游玩已经超时（比如关掉页面之前），直接进入休息
+      lock();
+    }
+
+    setInterval(tick, 1000);
+    document.addEventListener('visibilitychange', () => { savePlay(); });
+    window.addEventListener('pagehide', savePlay);
+    window.addEventListener('beforeunload', savePlay);
+  }
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(layout, 120);
+  });
+  window.addEventListener('orientationchange', () => setTimeout(layout, 260));
+
+  // 阻止双指缩放与双击缩放
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('dblclick', (e) => e.preventDefault());
+  document.addEventListener('contextmenu', (e) => {
+    // 允许长按照片
+    if (e.target && e.target.id === 'photoImg') return;
+    e.preventDefault();
+  });
+
+  boot();
+})();
+</script>
+</body>
+</html>
