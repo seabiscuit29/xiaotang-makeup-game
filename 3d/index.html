@@ -337,17 +337,18 @@ function makeHairFringeTexture(){
   grad.addColorStop(0,'#ffffff'); grad.addColorStop(1,'#b9b9b9');
   g.fillStyle = grad;
   g.beginPath();
-  g.moveTo(0,0); g.lineTo(512,0); g.lineTo(512,80);
-  g.bezierCurveTo(440,160,380,130,340,200);
-  g.bezierCurveTo(310,250,280,240,256,150);
-  g.bezierCurveTo(232,240,202,250,172,200);
-  g.bezierCurveTo(132,130,72,160,0,80);
+  g.moveTo(0,0); g.lineTo(512,0); g.lineTo(512,72);
+  g.bezierCurveTo(430,160, 350,170, 256,150);
+  g.bezierCurveTo(162,170, 82,160, 0,72);
   g.closePath(); g.fill();
-  g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = 3;
-  for(let i=0;i<5;i++){
+  // 中分的一条淡淡发缝
+  g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(256,0); g.lineTo(256,130); g.stroke();
+  g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 3;
+  for(let i=0;i<4;i++){
     g.beginPath();
-    g.moveTo(160+i*36, 10);
-    g.quadraticCurveTo(180+i*34, 70, 200+i*34, 100);
+    g.moveTo(150+i*58, 8);
+    g.quadraticCurveTo(170+i*52, 60, 190+i*46, 110);
     g.stroke();
   }
   return new THREE.CanvasTexture(c);
